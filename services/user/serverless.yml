@@ -1,0 +1,108 @@
+service: BREWOPTIX-LOGIN-API
+
+provider: 
+  name: aws
+  runtime: python3.6
+  stage: ${opt:stage, 'dev'}
+  region: ${self:custom.region}
+  environment: ${self:custom.environment}
+  iamRoleStatements:
+    - ${self:custom.iamRoleStatements}
+    - ${self:provider.snsRoleStatements}
+    - ${self:provider.sqsRoleStatements}
+  apiGateway:
+    restApiId:
+      'Fn::ImportValue': BrewOptix-${self:provider.stage}-ApiGateway-restApiId
+    restApiRootResourceId:
+      'Fn::ImportValue': BrewOptix-${self:provider.stage}-ApiGateway-rootResourceId
+  snsRoleStatements:
+    Effect: Allow
+    Action:
+      - sns:Publish
+    Resource:
+      - arn:aws:sns:#{AWS::Region}:#{AWS::AccountId}:${self:provider.stage}-suppliers
+      - arn:aws:sns:#{AWS::Region}:#{AWS::AccountId}:${self:provider.stage}-distributors
+      - arn:aws:sns:#{AWS::Region}:#{AWS::AccountId}:${self:provider.stage}-users
+  sqsRoleStatements:
+    Effect: Allow
+    Action:
+      - sqs:SendMessage
+      - sqs:GetQueueUrl
+      - sqs:ListQueues
+    Resource:
+      - arn:aws:sqs:#{AWS::Region}:#{AWS::AccountId}:${self:provider.stage}-email-transmitter
+
+custom: ${file(../config.yaml)}
+
+# It is not possible to reference files on directory levels above serverless.yml directly when working in AWS Lambda
+# So, we either have to install these additional files as pip packages or `include` them to the package explicitly
+# Included python files would be available parallel to serverless.yml and needs to be imported in this structure
+# For example:
+# fdc_data_dynamodb is present two levels above this serverless.yml, but in common.py it can be imported from cur dir.
+package:
+  include:
+    - ../api_utils.py
+    - ../api_constants.py
+    - ../common.py
+    - ../../log_config.py
+    - ../../logging_api.py
+    - ../auth.py
+    - ../../data_common/*
+    - ../../data_dynamodb/*
+    - ../../data_dynamodb/repository/*
+
+functions:
+  login:
+    handler: handler.login
+    name: ${self:provider.stage}-${self:service}-login
+    description: Handle login request
+    timeout: 20
+    events:
+      - http:
+          path: login
+          method: post
+          cors: true
+          response:
+            headers:
+              Content-Type: "'application/json'"
+            template: $input.path('$.body')
+          integration: lambda
+
+  signup:
+    handler: handler.signup
+    name: ${self:provider.stage}-${self:service}-signup
+    description: Handle new user signup request
+    timeout: 20
+    environment:
+      USER_REGISTER_EMAIL_TEMPLATE: user_register_email_template
+    events:
+      - http:
+          path: signup
+          method: post
+          cors: true
+          response:
+            headers:
+              Content-Type: "'application/json'"
+            template: $input.path('$.body')
+          integration: lambda
+
+  password_reset:
+    handler: handler.password_reset
+    name: ${self:provider.stage}-${self:service}-password-reset
+    description: Handle user password reset request
+    timeout: 20
+    events:
+      - http:
+          path: password-reset
+          method: post
+          cors: true
+          response:
+            headers:
+              Content-Type: "'application/json'"
+            template: $input.path('$.body')
+          integration: lambda
+
+plugins:
+  - serverless-python-requirements
+  - serverless-pseudo-parameters
+  - serverless-prune-plugin
