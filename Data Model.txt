@@ -1,0 +1,36 @@
+BrewOptix Data Model
+
+The Big 8. These properties are on every object:
+
+{
+    "entity_id": uuid,
+    "version": "uuid,
+    "previous_version": uuid,
+    "changed_by_id": uuid,
+    "changed_on": timestamp,
+    "active": bool,
+    "latest": bool,
+    "user_id": uuid
+}
+
+For the objects which follow, the Big 8 are present unless specifically noted as not applicable.
+
+
+Profile
+{
+	"firstname": string,
+	"lastname": string,
+	"email": string,
+	"affiliate_id": string,
+	"timezone_name": string,
+    "timezone_utc_offset": float,
+    "workday_start_time": string,
+	"marketplaces": 
+		[
+			{
+				"name": string,
+				"profile_url": string
+			}
+		]
+}
+
