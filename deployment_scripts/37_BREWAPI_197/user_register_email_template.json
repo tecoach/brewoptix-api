@@ -1,8 +1,0 @@
-{
-  "Template": {
-    "TemplateName": "user_register_email_template",
-    "SubjectPart": "BrewOptix",
-    "HtmlPart": "<style>table{border-collapse: collapse;}table, th, td{border: 1px solid black; text-align: center;}</style><body> <h1>User Information</h1> <table width='100%' style='border: 1px solid black;'> <thead> <tr> <th>Your Name</th> <th>Email Address</th> <th>Brewer/Distributor</th> <th>Website</th> <th>Company Name</th> </tr></thead> <tbody> <tr> <td>{{name}}</td><td>{{email}}</td><td>I am a{{brewery_distributor}}</td><td>{{website}}</td><td>{{company_name}}</td></tr></tbody> </table></body>",
-    "TextPart": ""
-  }
-}
