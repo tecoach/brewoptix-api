@@ -1,0 +1,111 @@
+service: BREWOPTIX-PROFILE-API
+
+provider: 
+  name: aws
+  runtime: python3.6
+  stage: ${opt:stage, 'dev'}
+  region: ${self:custom.region}
+  environment: ${self:custom.environment}
+  iamRoleStatements:
+    - ${self:custom.iamRoleStatements}
+    - ${self:provider.snsRoleStatements}
+  apiGateway:
+    restApiId:
+      'Fn::ImportValue': BrewOptix-${self:provider.stage}-ApiGateway-restApiId
+    restApiRootResourceId:
+      'Fn::ImportValue': BrewOptix-${self:provider.stage}-ApiGateway-rootResourceId
+  snsRoleStatements:
+    Effect: Allow
+    Action:
+      - sns:Publish
+    Resource:
+      - arn:aws:sns:#{AWS::Region}:#{AWS::AccountId}:${self:provider.stage}-users
+      - arn:aws:sns:#{AWS::Region}:#{AWS::AccountId}:${self:provider.stage}-suppliers
+      - arn:aws:sns:#{AWS::Region}:#{AWS::AccountId}:${self:provider.stage}-distributors
+
+custom: ${file(../config.yaml)}
+
+# It is not possible to reference files on directory levels above serverless.yml directly when working in AWS Lambda
+# So, we either have to install these additional files as pip packages or `include` them to the package explicitly
+# Included python files would be available parallel to serverless.yml and needs to be imported in this structure
+# For example:
+# fdc_data_dynamodb is present two levels above this serverless.yml, but in common.py it can be imported from cur dir.
+package:
+  include:
+    - ../api_utils.py
+    - ../api_constants.py
+    - ../common.py
+    - ../../log_config.py
+    - ../../logging_api.py
+    - ../auth.py
+    - ../../data_common/*
+    - ../../data_dynamodb/*
+    - ../../data_dynamodb/repository/*
+
+functions:
+  get_or_create_profile:
+    handler: handler.get_or_create_profile
+    name: ${self:provider.stage}-${self:service}-get-profile
+    description: Handle GET request for user profile
+    timeout: 20
+    events:
+      - http:
+          path: users
+          method: get
+          cors: true
+          response:
+            headers:
+              Content-Type: "'application/json'"
+            template: $input.path('$.body')
+          integration: lambda
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+
+
+  update_profile:
+    handler: handler.update_profile
+    name: ${self:provider.stage}-${self:service}-update-profile
+    description: Handle PUT request for user profile
+    timeout: 20
+    events:
+      - http:
+          path: users
+          method: put
+          cors: true
+          response:
+            headers:
+              Content-Type: "'application/json'"
+            template: $input.path('$.body')
+          integration: lambda
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+
+  delete_profile:
+    handler: handler.delete_account
+    name: ${self:provider.stage}-${self:service}-delete-account
+    description: Handles DELETE user account
+    timeout: 20
+    events:
+      - http:
+          path: users
+          method: delete
+          cors: true
+          integration: lambda
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+
+resources:
+  Resources:
+    NotificationTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        DisplayName: 'obj saves are sent to this topic'
+        TopicName: ${self:provider.stage}-users
+
+plugins:
+  - serverless-python-requirements
+  - serverless-pseudo-parameters
+  - serverless-prune-plugin
