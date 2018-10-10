@@ -1,0 +1,60 @@
+pythonRequirements:
+  noDeploy: []    # https://github.com/UnitedIncome/serverless-python-requirements/issues/241#issuecomment-421355568
+  dockerizePip: true
+  fileName: ../../requirements.txt
+
+iamRoleStatements: # permissions for all of your functions can be set here
+  Effect: Allow
+  Action: # Gives permission to DynamoDB tables in a specific region
+    - dynamodb:DescribeTable
+    - dynamodb:Query
+    - dynamodb:Scan
+    - dynamodb:GetItem
+    - dynamodb:PutItem
+    - dynamodb:UpdateItem
+    - dynamodb:DeleteItem
+  Resource: "arn:aws:dynamodb:*:*:*"
+
+region: ${file(../../config.${self:provider.stage}.json):REGION}
+environment:
+  REGION: ${file(../../config.${self:provider.stage}.json):REGION}
+  STAGE: ${self:provider.stage}
+  AUTH0_DOMAIN: ${file(../../config.${self:provider.stage}.json):AUTH0_DOMAIN}
+  AUTH0_AUDIENCE: ${file(../../config.${self:provider.stage}.json):AUTH0_AUDIENCE}
+  AUTH0_CLIENT_ID: ${file(../../config.${self:provider.stage}.json):AUTH0_CLIENT_ID}
+  AUTH0_CLIENT_SECRET: ${file(../../config.${self:provider.stage}.json):AUTH0_CLIENT_SECRET}
+  AUTH0_MANAGEMENT_API_CLIENT_ID: ${file(../../config.${self:provider.stage}.json):AUTH0_MANAGEMENT_API_CLIENT_ID}
+  AUTH0_MANAGEMENT_API_CLIENT_SECRET: ${file(../../config.${self:provider.stage}.json):AUTH0_MANAGEMENT_API_CLIENT_SECRET}
+  AUTH0_CLIENT_PUBLIC_KEY: ${file(../../public_key)}
+  AUTH0_CONNECTION: ${file(../../config.${self:provider.stage}.json):AUTH0_CONNECTION}
+  SIGNUP_ORIGIN_URL: ${file(../../config.${self:provider.stage}.json):SIGNUP_ORIGIN_URL}
+  S3_UPLOADS_BUCKET_NAME: ${file(../../config.${self:provider.stage}.json):S3_UPLOADS_BUCKET_NAME}
+  AUTHORIZER_ARN: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.AuthLambdaFunctionQualifiedArn}
+  STRIPE_SECRET_KEY: ${file(../../config.${self:provider.stage}.json):STRIPE_SECRET_KEY}
+  AURORA_DB_ARN: ${file(../../config.${self:provider.stage}.json):AURORA_DB_ARN}
+  AURORA_DB_SECRET_ARN: ${file(../../config.${self:provider.stage}.json):AURORA_DB_SECRET_ARN}
+  AURORA_DB_NAME: ${file(../../config.${self:provider.stage}.json):AURORA_DB_NAME}
+  ROLLBAR_SECRET: ${file(../../config.${self:provider.stage}.json):ROLLBAR_SECRET}
+  PROJECTIONS_CUTOFF_DELTA_DAYS: ${file(../../config.${self:provider.stage}.json):PROJECTIONS_CUTOFF_DELTA_DAYS}
+  EMAIL_TRANSMITTER_SOURCE: ${file(../../config.${self:provider.stage}.json):EMAIL_TRANSMITTER_SOURCE}
+  SQS_EMAIL_TRANSMITTER: ${self:provider.stage}-email-transmitter
+  NEW_USER_NOTIFICATION_LIST: ${file(../../config.${self:provider.stage}.json):NEW_USER_NOTIFICATION_LIST}
+
+corsStatements:
+  origin: '*' # <-- Specify allowed origin. If required, allowed origin can be set to point from webapp deployment URL.
+  headers: # <-- Specify allowed headers
+    - Content-Type
+    - X-Amz-Date
+    - Authorization
+    - X-Api-Key
+    - X-Amz-Security-Token
+    - X-Amz-User-Agent
+    - X-Supplier-Id
+    - X-Distributor-Id
+    - Access-Control-Allow-Headers
+    - Access-Control-Allow-Origin
+  allowCredentials: false
+
+prune:
+  automatic: true
+  number: 3
