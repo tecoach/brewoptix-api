@@ -1,0 +1,140 @@
+service: BREWOPTIX-DISTRIBUTOR-SUPPLIERS-API
+
+provider: 
+  name: aws
+  runtime: python3.6
+  stage: ${opt:stage, 'dev'}
+  region: ${self:custom.region}
+  environment: ${self:custom.environment}
+  iamRoleStatements:
+    - ${self:custom.iamRoleStatements}
+  apiGateway:
+    restApiId:
+      'Fn::ImportValue': BrewOptix-${self:provider.stage}-ApiGateway-restApiId
+    restApiRootResourceId:
+      'Fn::ImportValue': BrewOptix-${self:provider.stage}-ApiGateway-rootResourceId
+
+custom: ${file(../config.yaml)}
+
+# It is not possible to reference files on directory levels above serverless.yml directly when working in AWS Lambda
+# So, we either have to install these additional files as pip packages or `include` them to the package explicitly
+# Included python files would be available parallel to serverless.yml and needs to be imported in this structure
+# For example:
+# fdc_data_dynamodb is present two levels above this serverless.yml, but in common.py it can be imported from cur dir.
+package:
+  include:
+    - ../api_utils.py
+    - ../api_constants.py
+    - ../common.py
+    - ../../log_config.py
+    - ../../logging_api.py
+    - ../auth.py
+    - ../../data_common/*
+    - ../../data_dynamodb/*
+    - ../../data_dynamodb/repository/*
+
+functions:
+  add_distributor_supplier:
+    handler: handler.add_distributor_supplier
+    name: ${self:provider.stage}-${self:service}-add-entity
+    description: Add a new distributor-supplier with access code
+    timeout: 20
+    events:
+      - http:
+          path: distributor-suppliers
+          method: post
+          cors: ${self:custom.corsStatements}
+          response:
+            headers:
+              Content-Type: "'application/json'"
+            template: $input.path('$.body')
+          integration: lambda
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+
+  modify_distributor_supplier:
+    handler: handler.modify_distributor_supplier
+    name: ${self:provider.stage}-${self:service}-modify-entity
+    description: Update a distributor-supplier
+    timeout: 20
+    events:
+      - http:
+          path: distributor-suppliers
+          method: put
+          cors: ${self:custom.corsStatements}
+          response:
+            headers:
+              Content-Type: "'application/json'"
+            template: $input.path('$.body')
+          integration: lambda
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+
+  get_distributor_supplier:
+    handler: handler.get_by_id
+    name: ${self:provider.stage}-${self:service}-get-by-id
+    description: Get a distributor-supplier using entity_id
+    timeout: 20
+    events:
+      - http:
+          path: distributor-suppliers/{entity_id}
+          method: get
+          cors: ${self:custom.corsStatements}
+          integration: lambda
+          response:
+            headers:
+              Content-Type: "'application/json'"
+            template: $input.path('$.body')
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+          request:
+            parameters:
+              paths:
+                entity_id: true
+
+  delete_distributor_supplier:
+    handler: handler.delete_by_id
+    name: ${self:provider.stage}-${self:service}-delete-by-id
+    description: Delete a distributor-supplier using entity_id
+    timeout: 20
+    events:
+      - http:
+          path: distributor-suppliers/{entity_id}
+          method: delete
+          cors: ${self:custom.corsStatements}
+          integration: lambda
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+          request:
+            parameters:
+              paths:
+                entity_id: true
+
+  get_every_distributor_supplier:
+    handler: handler.get_every_distributor_supplier
+    name: ${self:provider.stage}-${self:service}-get-every-entity
+    description: Get every distributor_suppliers
+    timeout: 20
+    events:
+      - http:
+          path: distributor-suppliers
+          method: get
+          cors: ${self:custom.corsStatements}
+          integration: lambda
+          response:
+            headers:
+              Content-Type: "'application/json'"
+            template: $input.path('$.body')
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+
+
+plugins:
+  - serverless-python-requirements
+  - serverless-pseudo-parameters
+  - serverless-prune-plugin
