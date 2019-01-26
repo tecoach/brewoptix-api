@@ -1,0 +1,64 @@
+service: BREWOPTIX-EMAIL-TRANSMITTER-API
+
+provider:
+  name: aws
+  runtime: python3.6
+  stage: ${opt:stage, 'dev'}
+  region: ${self:custom.region}
+  environment: ${self:custom.environment}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - sqs:*
+      Resource:
+        - arn:aws:sqs:#{AWS::Region}:#{AWS::AccountId}:${self:provider.stage}-email-transmitter
+    - Effect: Allow
+      Action:
+        - ses:SendEmail
+        - ses:SendRawEmail
+        - ses:SendTemplatedEmail
+      Resource:
+        - arn:aws:ses:#{AWS::Region}:#{AWS::AccountId}:identity/*
+
+custom: ${file(../config.yaml)}
+
+# It is not possible to reference files on directory levels above serverless.yml directly when working in AWS Lambda
+# So, we either have to install these additional files as pip packages or `include` them to the package explicitly
+# Included python files would be available parallel to serverless.yml and needs to be imported in this structure
+# For example:
+# fdc_data_dynamodb is present two levels above this serverless.yml, but in common.py it can be imported from cur dir.
+package:
+  include:
+    - ../api_utils.py
+    - ../api_constants.py
+    - ../common.py
+    - ../../log_config.py
+    - ../../logging_api.py
+    - ../auth.py
+    - ../../data_common/*
+    - ../../data_dynamodb/*
+    - ../../data_dynamodb/repository/*
+
+functions:
+# SQS handler
+  email_processor:
+    handler: handler.email_transmitter
+    name: ${self:provider.stage}-${self:service}-email-transmitter
+    description: Email notification transmitter
+    events:
+      - sqs:
+          arn: arn:aws:sqs:#{AWS::Region}:#{AWS::AccountId}:${self:provider.stage}-email-transmitter
+
+resources:
+  Resources:
+    Messages:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: ${self:provider.stage}-email-transmitter
+        MessageRetentionPeriod: 1209600
+        VisibilityTimeout: 600
+
+plugins:
+  - serverless-python-requirements
+  - serverless-pseudo-parameters
+  - serverless-prune-plugin
