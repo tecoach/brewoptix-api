@@ -1,0 +1,23 @@
+{
+  "sns_object_names": [
+    "adjustments",
+    "brands",
+    "containers",
+    "counts",
+    "distributors",
+    "merchandise",
+    "on-hand",
+    "production",
+    "products",
+    "users",
+    "retail-packages",
+    "supplier-distributors",
+    "suppliers"
+  ],
+  "sqs_object_names": [
+    "adjustments",
+    "counts",
+    "projections",
+    "production"
+  ]
+}
