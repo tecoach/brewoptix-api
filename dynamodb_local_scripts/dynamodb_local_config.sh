@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+echo "Exporting Local Config Variables"
+export DYNAMO_ENDPOINT="http://localhost:8000"
+export SQS_ENDPOINT="http://localhost:4576"
+export SNS_ENDPOINT="http://localhost:4575"
+export S3_ENDPOINT="http://localhost:4572"
+export DYNAMO_LOCAL_CONTAINER_NAME="brewoptix_tables"
+export AURORA_DB_ARN=""
+export AURORA_DB_SECRET_ARN=""
+export AURORA_DB_NAME=""
+export STAGE="local"
