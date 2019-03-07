@@ -1,0 +1,286 @@
+service: BREWOPTIX-PO-API  # Purchase order API
+
+provider: 
+  name: aws
+  runtime: python3.6
+  stage: ${opt:stage, 'dev'}
+  region: ${self:custom.region}
+  environment: ${self:custom.environment}
+  iamRoleStatements:
+    - ${self:custom.iamRoleStatements}
+    - ${self:provider.snsRoleStatements}
+  apiGateway:
+    restApiId:
+      'Fn::ImportValue': BrewOptix-${self:provider.stage}-ApiGateway-restApiId
+    restApiRootResourceId:
+      'Fn::ImportValue': BrewOptix-${self:provider.stage}-ApiGateway-rootResourceId
+  snsRoleStatements:
+    Effect: Allow
+    Action:
+      - sns:Publish
+    Resource:
+      - arn:aws:sns:#{AWS::Region}:#{AWS::AccountId}:${self:provider.stage}-purchase-orders
+
+custom: ${file(../config.yaml)}
+
+# It is not possible to reference files on directory levels above serverless.yml directly when working in AWS Lambda
+# So, we either have to install these additional files as pip packages or `include` them to the package explicitly
+# Included python files would be available parallel to serverless.yml and needs to be imported in this structure
+# For example:
+# fdc_data_dynamodb is present two levels above this serverless.yml, but in common.py it can be imported from cur dir.
+package:
+  include:
+    - ../api_utils.py
+    - ../api_constants.py
+    - ../common.py
+    - ../../log_config.py
+    - ../../logging_api.py
+    - ../auth.py
+    - ../../data_common/*
+    - ../../data_dynamodb/*
+    - ../../data_dynamodb/repository/*
+
+functions:
+  add_purchase_order:
+    handler: handler.add_purchase_order
+    name: ${self:provider.stage}-${self:service}-add-purchase-order
+    description: Add a purchase order
+    timeout: 20
+    events:
+      - http:
+          path: purchase-orders
+          method: post
+          cors: ${self:custom.corsStatements}
+          response:
+            headers:
+              Content-Type: "'application/json'"
+            template: $input.path('$.body')
+          integration: lambda
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+
+  modify_purchase_order:
+    handler: handler.modify_purchase_order
+    name: ${self:provider.stage}-${self:service}-modify-purchase-order
+    description: Update a purchase order
+    timeout: 20
+    events:
+      - http:
+          path: purchase-orders
+          method: put
+          cors: ${self:custom.corsStatements}
+          response:
+            headers:
+              Content-Type: "'application/json'"
+            template: $input.path('$.body')
+          integration: lambda
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+
+  get_purchase_order:
+    handler: handler.get_by_id
+    name: ${self:provider.stage}-${self:service}-get-purchase-order-by-id
+    description: Get a purchase order by entity_id
+    timeout: 20
+    events:
+      - http:
+          path: purchase-orders/{entity_id}
+          method: get
+          cors: ${self:custom.corsStatements}
+          integration: lambda
+          response:
+            headers:
+              Content-Type: "'application/json'"
+            template: $input.path('$.body')
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+          request:
+            parameters:
+              paths:
+                entity_id: true
+
+  delete_purchase_order:
+    handler: handler.delete_by_id
+    name: ${self:provider.stage}-${self:service}-delete-purchase-order-by-id
+    description: Delete a purchase order by entity_id
+    timeout: 20
+    events:
+      - http:
+          path: purchase-orders/{entity_id}
+          method: delete
+          cors: ${self:custom.corsStatements}
+          integration: lambda
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+          request:
+            parameters:
+              paths:
+                entity_id: true
+
+  get_purchase_orders_by_order_date:
+    handler: handler.get_purchase_orders_by_order_date
+    name: ${self:provider.stage}-${self:service}-get-purchase_orders-by-order-date
+    description: Get purchase orders by order date range
+    timeout: 20
+    events:
+      - http:
+          path: purchase-orders/ordered-between/{min_order_date}/{max_order_date}
+          method: get
+          cors: ${self:custom.corsStatements}
+          response:
+            headers:
+              Content-Type: "'application/json'"
+            template: $input.path('$.body')
+          integration: lambda
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+          request:
+            parameters:
+              paths:
+                min_order_date: true
+                max_order_date: true
+      - http:
+          path: purchase-orders/ordered-between/{min_order_date}
+          method: get
+          cors: ${self:custom.corsStatements}
+          response:
+            headers:
+              Content-Type: "'application/json'"
+            template: $input.path('$.body')
+          integration: lambda
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+          request:
+            parameters:
+              paths:
+                min_order_date: true
+
+  get_purchase_orders_by_pack_date:
+    handler: handler.get_purchase_orders_by_pack_date
+    name: ${self:provider.stage}-${self:service}-get-purchase-orders-by-pack-date
+    description: Get purchase orders by pack date range
+    timeout: 20
+    events:
+      - http:
+          path: purchase-orders/packed-between/{min_pack_date}/{max_pack_date}
+          method: get
+          cors: ${self:custom.corsStatements}
+          response:
+            headers:
+              Content-Type: "'application/json'"
+            template: $input.path('$.body')
+          integration: lambda
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+          request:
+            parameters:
+              paths:
+                min_pack_date: true
+                max_pack_date: true
+      - http:
+          path: purchase-orders/packed-between/{min_pack_date}
+          method: get
+          cors: ${self:custom.corsStatements}
+          response:
+            headers:
+              Content-Type: "'application/json'"
+            template: $input.path('$.body')
+          integration: lambda
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+          request:
+            parameters:
+              paths:
+                min_pack_date: true
+
+  get_purchase_orders_by_ship_date:
+    handler: handler.get_purchase_orders_by_ship_date
+    name: ${self:provider.stage}-${self:service}-get-purchase-orders-by-ship-date
+    description: Get purchase orders by ship date range
+    timeout: 20
+    events:
+      - http:
+          path: purchase-orders/shipped-between/{min_ship_date}/{max_ship_date}
+          method: get
+          cors: ${self:custom.corsStatements}
+          response:
+            headers:
+              Content-Type: "'application/json'"
+            template: $input.path('$.body')
+          integration: lambda
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+          request:
+            parameters:
+              paths:
+                min_ship_date: true
+                max_ship_date: true
+      - http:
+          path: purchase-orders/shipped-between/{min_ship_date}
+          method: get
+          cors: ${self:custom.corsStatements}
+          response:
+            headers:
+              Content-Type: "'application/json'"
+            template: $input.path('$.body')
+          integration: lambda
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+          request:
+            parameters:
+              paths:
+                min_ship_date: true
+
+resources:
+  Resources:
+    Queue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: ${self:provider.stage}-purchase-orders
+        VisibilityTimeout: 120
+
+    NotificationTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        DisplayName: 'obj saves are sent to this topic'
+        TopicName: ${self:provider.stage}-purchase-orders
+
+    QueuePolicy:
+      Type: AWS::SQS::QueuePolicy
+      Properties:
+        Queues:
+          - !Ref Queue
+        PolicyDocument:
+          Statement:
+            Effect: Allow
+            Principal: "*"
+            Action: "sqs:*"
+            Resource: "*"
+            Condition:
+              ArnEquals:
+                "aws:SourceArn": arn:aws:sns:#{AWS::Region}:#{AWS::AccountId}:${self:provider.stage}-purchase-orders
+      DependsOn: Queue
+
+    QueueToSnsSubscription:
+      Type: AWS::SNS::Subscription
+      Properties:
+        Endpoint: arn:aws:sqs:#{AWS::Region}:#{AWS::AccountId}:${self:provider.stage}-purchase-orders
+        Protocol: sqs
+        RawMessageDelivery: true
+        TopicArn: arn:aws:sns:#{AWS::Region}:#{AWS::AccountId}:${self:provider.stage}-purchase-orders
+      DependsOn: [NotificationTopic, Queue]
+
+plugins:
+  - serverless-python-requirements
+  - serverless-pseudo-parameters
+  - serverless-prune-plugin
