@@ -1,0 +1,59 @@
+supplier {
+    "name": required,
+    "street1": optional,
+    "street2": optional,
+    "city": optional,
+    "state": optional,
+    "zip": optional,
+    "phone": optional,
+    "website": optional,
+    "main_contact_id": auto-assigned,
+    "users": auto-assigned
+}
+
+package_type {
+    "name": required,
+    "quantity": required,
+    "ordinal": required,
+    "weight": required,
+    "weight_uom": required,
+    "pallet_layer_quantity": required,
+    "pallet_layer_max": required,
+    "retail_package_id": required,
+    "supplier_id": required
+}
+
+on_hand {
+    "product_id": required,
+    "supplier_id": required,
+    "brand_id": required,
+    "quantity": required,
+    "observation_date": required,
+    "actual": required
+}
+
+adjustment {
+    "product_id": required,
+    "supplier_id": required,
+    "brand_id": required,
+    "quantity": required,
+    "adjustment_date": required,
+    "adjustment_type": required,
+    "notes": optional
+}
+
+container {
+    "name": required,
+    "volume": required,
+    "volume_uom": required,
+    "type": required,
+    "global": required,
+    "supplier_id": required,
+}
+
+retail_package {
+    "name": required,
+    "quantity": required,
+    "container_id": required,
+    "supplier_id": required,
+}
