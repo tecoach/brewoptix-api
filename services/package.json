@@ -1,0 +1,14 @@
+{
+  "name": "BREWOPTIX-WEB-API",
+  "description": "",
+  "version": "0.1.0",
+  "dependencies": {
+    "serverless": "^1.52.2"
+  },
+  "devDependencies": {
+    "serverless-plugin-scripts": "^1.0.2",
+    "serverless-prune-plugin": "^1.4.1",
+    "serverless-pseudo-parameters": "^2.5.0",
+    "serverless-python-requirements": "^5.0.1"
+  }
+}
