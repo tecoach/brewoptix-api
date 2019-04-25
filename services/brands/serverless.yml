@@ -1,0 +1,176 @@
+service: BREWOPTIX-BRANDS-API
+
+provider: 
+  name: aws
+  runtime: python3.6
+  stage: ${opt:stage, 'dev'}
+  region: ${self:custom.region}
+  environment: ${self:custom.environment}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:DescribeTable
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource:
+      - "arn:aws:dynamodb:*:*:table/brewoptix-*"
+    - Effect: Allow
+      Action:
+        - s3:PutObject
+      Resource:
+        - 'arn:aws:s3:::${self:provider.environment.S3_UPLOADS_BUCKET_NAME}/*'
+    - Effect: Allow
+      Action:
+        - sns:Publish
+      Resource:
+        - arn:aws:sns:#{AWS::Region}:#{AWS::AccountId}:${self:provider.stage}-brands
+
+  apiGateway:
+    restApiId:
+      'Fn::ImportValue': BrewOptix-${self:provider.stage}-ApiGateway-restApiId
+    restApiRootResourceId:
+      'Fn::ImportValue': BrewOptix-${self:provider.stage}-ApiGateway-rootResourceId
+
+custom:
+  pythonRequirements: ${file(../config.yaml):pythonRequirements}
+  iamRoleStatements: ${file(../config.yaml):iamRoleStatements}
+  region: ${file(../config.yaml):region}
+  environment: ${file(../config.yaml):environment}
+  corsStatements: ${file(../config.yaml):corsStatements}
+  prune: ${file(../config.yaml):prune}
+
+
+# It is not possible to reference files on directory levels above serverless.yml directly when working in AWS Lambda
+# So, we either have to install these additional files as pip packages or `include` them to the package explicitly
+# Included python files would be available parallel to serverless.yml and needs to be imported in this structure
+# For example:
+# fdc_data_dynamodb is present two levels above this serverless.yml, but in common.py it can be imported from cur dir.
+package:
+  include:
+    - ../api_utils.py
+    - ../api_constants.py
+    - ../common.py
+    - ../../log_config.py
+    - ../../logging_api.py
+    - ../auth.py
+    - ../../data_common/*
+    - ../../data_dynamodb/*
+    - ../../data_dynamodb/repository/*
+
+functions:
+  add_brand:
+    handler: handler.add_brand
+    name: ${self:provider.stage}-${self:service}-add-brand
+    description: Add a new brand
+    timeout: 20
+    events:
+      - http:
+          path: brands
+          method: post
+          cors: ${self:custom.corsStatements}
+          response:
+            headers:
+              Content-Type: "'application/json'"
+            template: $input.path('$.body')
+          integration: lambda
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+
+  modify_brand:
+    handler: handler.modify_brand
+    name: ${self:provider.stage}-${self:service}-modify-brand
+    description: Update a brand
+    timeout: 20
+    events:
+      - http:
+          path: brands
+          method: put
+          cors: ${self:custom.corsStatements}
+          response:
+            headers:
+              Content-Type: "'application/json'"
+            template: $input.path('$.body')
+          integration: lambda
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+
+  get_brand:
+    handler: handler.get_by_id
+    name: ${self:provider.stage}-${self:service}-get-brand-by-id
+    description: Get a brand using entity_id
+    timeout: 20
+    events:
+      - http:
+          path: brands/{entity_id}
+          method: get
+          cors: ${self:custom.corsStatements}
+          integration: lambda
+          response:
+            headers:
+              Content-Type: "'application/json'"
+            template: $input.path('$.body')
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+          request:
+            parameters:
+              paths:
+                entity_id: true
+
+  delete_brand:
+    handler: handler.delete_by_id
+    name: ${self:provider.stage}-${self:service}-delete-brand-by-id
+    description: Delete a brand using entity_id
+    timeout: 20
+    events:
+      - http:
+          path: brands/{entity_id}
+          method: delete
+          cors: ${self:custom.corsStatements}
+          integration: lambda
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+          request:
+            parameters:
+              paths:
+                entity_id: true
+
+  get_every_brand:
+    handler: handler.get_every_brand
+    name: ${self:provider.stage}-${self:service}-get-every-brands
+    description: Get every brands
+    timeout: 20
+    events:
+      - http:
+          path: brands
+          method: get
+          cors: ${self:custom.corsStatements}
+          integration: lambda
+          response:
+            headers:
+              Content-Type: "'application/json'"
+            template: $input.path('$.body')
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+
+resources:
+  Resources:
+    NotificationTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        DisplayName: 'obj saves are sent to this topic'
+        TopicName: ${self:provider.stage}-brands
+
+plugins:
+  - serverless-python-requirements
+  - serverless-plugin-scripts
+  - serverless-pseudo-parameters
+  - serverless-prune-plugin
