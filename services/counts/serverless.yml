@@ -1,0 +1,248 @@
+service: BREWOPTIX-COUNT-API
+
+provider: 
+  name: aws
+  runtime: python3.6
+  stage: ${opt:stage, 'dev'}
+  region: ${self:custom.region}
+  environment: ${self:custom.environment}
+  iamRoleStatements:
+    - ${self:custom.iamRoleStatements}
+    - ${self:provider.snsRoleStatements}
+  apiGateway:
+    restApiId:
+      'Fn::ImportValue': BrewOptix-${self:provider.stage}-ApiGateway-restApiId
+    restApiRootResourceId:
+      'Fn::ImportValue': BrewOptix-${self:provider.stage}-ApiGateway-rootResourceId
+  snsRoleStatements:
+    Effect: Allow
+    Action:
+      - sns:Publish
+    Resource:
+      - arn:aws:sns:#{AWS::Region}:#{AWS::AccountId}:${self:provider.stage}-counts
+
+custom: ${file(../config.yaml)}
+
+# It is not possible to reference files on directory levels above serverless.yml directly when working in AWS Lambda
+# So, we either have to install these additional files as pip packages or `include` them to the package explicitly
+# Included python files would be available parallel to serverless.yml and needs to be imported in this structure
+# For example:
+# fdc_data_dynamodb is present two levels above this serverless.yml, but in common.py it can be imported from cur dir.
+package:
+  include:
+    - ../api_utils.py
+    - ../api_constants.py
+    - ../common.py
+    - ../../log_config.py
+    - ../../logging_api.py
+    - ../auth.py
+    - ../../data_common/*
+    - ../../data_dynamodb/*
+    - ../../data_dynamodb/repository/*
+
+functions:
+  add_count:
+    handler: handler.add_count
+    name: ${self:provider.stage}-${self:service}-add-count
+    description: Add an count
+    timeout: 20
+    events:
+      - http:
+          path: counts
+          method: post
+          cors: ${self:custom.corsStatements}
+          response:
+            headers:
+              Content-Type: "'application/json'"
+            template: $input.path('$.body')
+          integration: lambda
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+
+  modify_count:
+    handler: handler.modify_count
+    name: ${self:provider.stage}-${self:service}-modify-count
+    description: Update an count
+    timeout: 20
+    events:
+      - http:
+          path: counts
+          method: put
+          cors: ${self:custom.corsStatements}
+          response:
+            headers:
+              Content-Type: "'application/json'"
+            template: $input.path('$.body')
+          integration: lambda
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+
+  get_count:
+    handler: handler.get_by_id
+    name: ${self:provider.stage}-${self:service}-get-count-by-id
+    description: Get a count by entity_id
+    timeout: 20
+    events:
+      - http:
+          path: counts/{entity_id}
+          method: get
+          cors: ${self:custom.corsStatements}
+          integration: lambda
+          response:
+            headers:
+              Content-Type: "'application/json'"
+            template: $input.path('$.body')
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+          request:
+            parameters:
+              paths:
+                entity_id: true
+
+  get_count_sheet:
+    handler: handler.get_count_sheet_by_id
+    name: ${self:provider.stage}-${self:service}-get-count-sheet-by-id
+    description: Get a count sheet (PDF) by entity_id
+    timeout: 20
+    events:
+      - http:
+          path: counts/sheet/{entity_id}
+          method: get
+          cors: ${self:custom.corsStatements}
+          integration: lambda
+          response:
+            headers:
+              Content-Type: "'application/pdf'"
+            template: $input.path('$.body')
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+          request:
+            parameters:
+              paths:
+                entity_id: true
+
+  delete_count:
+    handler: handler.delete_by_id
+    name: ${self:provider.stage}-${self:service}-delete-count-by-id
+    description: Delete a count by entity_id
+    timeout: 20
+    events:
+      - http:
+          path: counts/{entity_id}
+          method: delete
+          cors: ${self:custom.corsStatements}
+          integration: lambda
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+          request:
+            parameters:
+              paths:
+                entity_id: true
+
+  get_every_count:
+    handler: handler.get_every_count
+    name: ${self:provider.stage}-${self:service}-get-every-count
+    description: Get every counts
+    timeout: 20
+    events:
+      - http:
+          path: counts
+          method: get
+          cors: ${self:custom.corsStatements}
+          integration: lambda
+          response:
+            headers:
+              Content-Type: "'application/json'"
+            template: $input.path('$.body')
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+
+  get_counts_by_daterange:
+    handler: handler.get_counts_by_daterange
+    name: ${self:provider.stage}-${self:service}-get-counts-by-date
+    description: Get counts by count date range
+    timeout: 20
+    events:
+      - http:
+          path: counts/between/{min_count_date}/{max_count_date}
+          method: get
+          cors: ${self:custom.corsStatements}
+          response:
+            headers:
+              Content-Type: "'application/json'"
+            template: $input.path('$.body')
+          integration: lambda
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+          request:
+            parameters:
+              paths:
+                min_count_date: true
+                max_count_date: true
+      - http:
+          path: counts/between/{min_count_date}
+          method: get
+          cors: ${self:custom.corsStatements}
+          response:
+            headers:
+              Content-Type: "'application/json'"
+            template: $input.path('$.body')
+          integration: lambda
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+          request:
+            parameters:
+              paths:
+                min_count_date: true
+
+resources:
+  Resources:
+    Queue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: ${self:provider.stage}-counts
+        VisibilityTimeout: 120
+
+    NotificationTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        DisplayName: 'obj saves are sent to this topic'
+        TopicName: ${self:provider.stage}-counts
+
+    QueuePolicy:
+      Type: AWS::SQS::QueuePolicy
+      Properties:
+        Queues:
+          - !Ref Queue
+        PolicyDocument:
+          Statement:
+            Effect: Allow
+            Principal: "*"
+            Action: "sqs:*"
+            Resource: "*"
+            Condition:
+              ArnEquals:
+                "aws:SourceArn": arn:aws:sns:#{AWS::Region}:#{AWS::AccountId}:${self:provider.stage}-counts
+      DependsOn: Queue
+
+    QueueToSnsSubscription:
+      Type: AWS::SNS::Subscription
+      Properties:
+        Endpoint: arn:aws:sqs:#{AWS::Region}:#{AWS::AccountId}:${self:provider.stage}-counts
+        Protocol: sqs
+        RawMessageDelivery: true
+        TopicArn: arn:aws:sns:#{AWS::Region}:#{AWS::AccountId}:${self:provider.stage}-counts
+      DependsOn: [NotificationTopic, Queue]
+
+plugins:
+  - serverless-python-requirements
+  - serverless-pseudo-parameters
+  - serverless-prune-plugin
