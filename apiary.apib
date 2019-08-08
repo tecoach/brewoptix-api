@@ -1,0 +1,5084 @@
+FORMAT: 1A
+HOST: http://polls.apiblueprint.org
+
+# BrewOptixV2
+
+This set of APIs allow users to access BrewOptixV2 resources like User Profile, Suppliers, Distributors etc.
+
+Private endpoints are guarded by authorizers. To get Authorized, users need to pass a `Bearer` type `Authorization` Header, with `ID-TOKEN` received from login endpoint.
+Many of the endpoints also require a `x-supplier-id` header.
+
+## Adjustment Inventory [/adjustments]
+
+This resource contains information on inventory items on hand.
+
+### Get all [GET]
+
+Get all adjustments
+
++ Request
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
++ Response 200 (application/json)
+
+        [
+            {
+                "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+                "product_id": "581fa2a2-631d-4ec4-83a7-c905859681ec",
+                "quantity": 30,
+                "adjustment_date": "2019-12-21",
+                "adjustment_type": "upper",
+                "notes": "New Notes",
+                "user_id": "5d26bc028fc6c70caaa8fa7d",
+                "entity_id": "f14d9f6e-6579-44eb-b635-0bc46704a796",
+                "version": "6d298556-c9a9-47fe-9cf0-dba01f7f29fc",
+                "changed_on": "2019-07-29T20:01:03Z"
+            }
+        ]
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+### Add [POST]
+
+Adds a new adjustment record
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
+    + Body
+
+            {
+                "product_id": "581fa2a2-631d-4ec4-83a7-c905859681ec",
+                "quantity": 25,
+                "adjustment_date": "22-12-2019",
+                "adjustment_type": "lower",
+                "notes": "Notes"
+            }
+
+
+
++ Response 200 (application/json)
+
+        {
+            "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+            "product_id": "581fa2a2-631d-4ec4-83a7-c905859681ec",
+            "quantity": 25,
+            "adjustment_date": "2019-12-22",
+            "adjustment_type": "lower",
+            "notes": "Notes",
+            "user_id": "5d26bc028fc6c70caaa8fa7d",
+            "entity_id": "f14d9f6e-6579-44eb-b635-0bc46704a796",
+            "version": "9b2924f8-7173-47cf-bc55-f2de1fe8804c",
+            "changed_on": "2019-07-29T19:58:56Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 409 (application/json)
+
+        {
+            "error": "The request could not be completed due to a conflict with the current state of the resource"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+### Update [PUT]
+
+Update an existing adjustment record
+
+Note: This method does not allow updating base attributes of the resource, this will lead to a `409` error.
+Base attributes include `entity_id`, `version`, `changed_by_id` and `changed_on`.
+
+The ideal way to update is to GET an adjustment, modify the key-value pairs in that JSON data and
+pass it as body in a request to this endpoint
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
+    + Body
+
+            {
+                "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+                "product_id": "581fa2a2-631d-4ec4-83a7-c905859681ec",
+                "quantity": 30,
+                "adjustment_date": "2019-12-21",
+                "adjustment_type": "upper",
+                "notes": "New Notes",
+                "user_id": "5d26bc028fc6c70caaa8fa7d",
+                "entity_id": "f14d9f6e-6579-44eb-b635-0bc46704a796",
+                "version": "9b2924f8-7173-47cf-bc55-f2de1fe8804c",
+                "changed_on": "2019-07-29T19:58:56Z"
+            }
+
++ Response 200 (application/json)
+
+        {
+            "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+            "product_id": "581fa2a2-631d-4ec4-83a7-c905859681ec",
+            "quantity": 30,
+            "adjustment_date": "2019-12-21",
+            "adjustment_type": "upper",
+            "notes": "New Notes",
+            "user_id": "5d26bc028fc6c70caaa8fa7d",
+            "entity_id": "f14d9f6e-6579-44eb-b635-0bc46704a796",
+            "version": "6d298556-c9a9-47fe-9cf0-dba01f7f29fc",
+            "changed_on": "2019-07-29T20:01:03Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 409 (application/json)
+
+        {
+            "error": "The request could not be completed due to a conflict with the current state of the resource"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+
+## Adjustments Inventory - in date range [/adjustments/between/{min_adjustment_date}/{max_adjustment_date}]
+
+### Get [GET]
+
+Get a list of adjustments filtered by `adjustment_date` date range. The filtered list is inclusive of the `min` and `max` adjustment date.
+
++ Parameters
+    + `min_adjustment_date` (date) - `2017-12-01` Date from which to retrieve adjustments (01, December, 2017)
+    + `max_adjustment_date` (optional, date) - `2018-03-15` Date up to which to retrieve adjustments (15, March, 2018). If optionally left out, today's date is used instead.
+
++ Request
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 60701b3a-6aca-40cf-95ae-03eab68c23e0
+
++ Response 200 (application/json)
+
+            [
+                {
+                    "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+                    "product_id": "581fa2a2-631d-4ec4-83a7-c905859681ec",
+                    "quantity": 30,
+                    "adjustment_date": "2019-12-21",
+                    "adjustment_type": "upper",
+                    "notes": "New Notes",
+                    "user_id": "5d26bc028fc6c70caaa8fa7d",
+                    "entity_id": "f14d9f6e-6579-44eb-b635-0bc46704a796",
+                    "version": "6d298556-c9a9-47fe-9cf0-dba01f7f29fc",
+                    "changed_on": "2019-07-29T20:01:03Z"
+                }
+            ]
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+## Adjustments Inventory - adjustment by id [/adjustments/{entity_id}]
+
+### Get [GET]
+
+Gets an adjustment record by its id
+
++ Parameters
+    + `entity_id` (string) - `44e683c6-b377-4e68-9d12-4117cd964a04` entity id of the adjustment record
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
++ Response 200 (application/json)
+
+        {
+            "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+            "product_id": "581fa2a2-631d-4ec4-83a7-c905859681ec",
+            "quantity": 30,
+            "adjustment_date": "2019-12-21",
+            "adjustment_type": "upper",
+            "notes": "New Notes",
+            "user_id": "5d26bc028fc6c70caaa8fa7d",
+            "entity_id": "f14d9f6e-6579-44eb-b635-0bc46704a796",
+            "version": "6d298556-c9a9-47fe-9cf0-dba01f7f29fc",
+            "changed_on": "2019-07-29T20:01:03Z"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+### Delete [DELETE]
+
+Deletes a adjustment by its id
+
++ Parameters
+    + `entity_id` (string) - `44e683c6-b377-4e68-9d12-4117cd964a04` entity id of the adjustment record
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
++ Response 204
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+## Brands [/brands]
+
+This resource contains information on brands.
+
+### Get all [GET]
+
+Get all brands
+
++ Request
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: ad51d5ac-17bb-4240-8648-c483b224b2aa
+
++ Response 200 (application/json)
+
+        [
+            {
+                "user_id": "5d26bc028fc6c70caaa8fa7d",
+                "supplier_id": "ad51d5ac-17bb-4240-8648-c483b224b2aa",
+                "name": "Carlsberg",
+                "core_or_seasonal": "core",
+                "is_active": true,
+                "has_logo": true,
+                "abv": 0.75,
+                "available_date": "2019-10-21",
+                "state_registrations": [
+                    {
+                        "state": "AL",
+                        "registrationNumber": "5934JF-6Y"
+                    },
+                    {
+                        "state": "NJ",
+                        "registrationNumber": "HG89-MW-5QA"
+                    }
+                ],
+                "entity_id": "dbaf41b6-8a50-40d4-b443-14aeb0e6d049",
+                "version": "245f4a8c-a266-4b13-80d4-a5ae3293df5a",
+                "changed_on": "2019-07-19T21:47:40Z"
+            }
+        ]
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+### Add [POST]
+
+Adds a new brand
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: ad51d5ac-17bb-4240-8648-c483b224b2aa
+
+    + Body
+
+            {
+                "name": "Carlsberg",
+                "core_or_seasonal": "core",
+                "is_active": true,
+                "has_logo": true,
+                "abv": 0.75,
+                "available_date": "2019-10-21",
+               "state_registrations": [
+                    {
+                        "state": "AL",
+                        "registrationNumber": "5934JF-6Y"
+                    },
+                    {
+                        "state": "NJ",
+                        "registrationNumber": "HG89-MW-5QA"
+                    }
+                ],
+                "logo": "iVBORw0KGgoAAAANSUhEUgAACfkAAAMiCAYAAADXE1tkAAftqElEQVR42uz9abAk2Xn=="
+            }
+
++ Response 200 (application/json)
+
+        {
+            "name": "Carlsberg",
+            "supplier_id": "ad51d5ac-17bb-4240-8648-c483b224b2aa",
+            "core_or_seasonal": "core",
+            "is_active": true,
+            "has_logo": true,
+            "abv": 0.75,
+            "available_date": "2019-10-21",
+            "state_registrations": [
+                    {
+                        "state": "AL",
+                        "registrationNumber": "5934JF-6Y"
+                    },
+                    {
+                        "state": "NJ",
+                        "registrationNumber": "HG89-MW-5QA"
+                    }
+                ],
+            "user_id": "5d081df871deea0dd14ce63a",
+            "entity_id": "a3fca6a8-7337-4951-b6d6-b98681bd82ac",
+            "version": "9bd9fce9-b90c-49cb-8ef3-ebcd9822e3fd",
+            "changed_on": "2019-06-20T03:34:59Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed. Wrong type for key-val pair {KEY}"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. Missing required key-val pair {KEY}"
+        }
+
++ Response 409 (application/json)
+
+        {
+            "error": "The request could not be completed due to a conflict with the current state of the resource"
+        }
++ Response 415 (application/json)
+
+        {
+            "error": "Unsupported media type. Error with logo PNG. Unable to decode base64-PNG"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+### Update [PUT]
+
+Update an existing brand
+
+Note: This method does not allow updating base attributes of the resource, this will lead to a `409` error.
+Base attributes include `entity_id`, `version`, `changed_by_id` and `changed_on`.
+
+The ideal way to update is to GET a brand, modify the key-value pairs in that JSON data and
+pass it as body in a request to this endpoint
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: ad51d5ac-17bb-4240-8648-c483b224b2aa
+
+    + Body
+
+            {
+                "name": "Carlsberg Club Soda",
+                "supplier_id": "ad51d5ac-17bb-4240-8648-c483b224b2aa",
+                "core_or_seasonal": "seasonal",
+                "is_active": false,
+                "has_logo": true,
+                "abv": 0.85,
+                "available_date": "2019-10-21",
+                "state_registrations": [
+                    {
+                        "state": "AL",
+                        "registrationNumber": "5934JF-6Y"
+                    },
+                    {
+                        "state": "NJ",
+                        "registrationNumber": "HG89-MW-5QA"
+                    }
+                ],
+                "logo": "iVBORw0KGgoAAAANSUhEUgAACfkAAAMiCAYAAADXE1tkAAftqElEQVR42uz9abAk2Xn==",
+                "user_id": "5d081df871deea0dd14ce63a",
+                "entity_id": "a3fca6a8-7337-4951-b6d6-b98681bd82ac",
+                "version": "9bd9fce9-b90c-49cb-8ef3-ebcd9822e3fd",
+                "changed_on": "2019-06-20T03:34:59Z"
+            }
+
++ Response 200 (application/json)
+
+        {
+            "name": "Carlsberg Club Soda",
+            "supplier_id": "ad51d5ac-17bb-4240-8648-c483b224b2aa",
+            "core_or_seasonal": "seasonal",
+            "is_active": false,
+            "has_logo": true,
+            "abv": 0.85,
+            "available_date": "2019-10-21",
+            "state_registrations": [
+                    {
+                        "state": "AL",
+                        "registrationNumber": "5934JF-6Y"
+                    },
+                    {
+                        "state": "NJ",
+                        "registrationNumber": "HG89-MW-5QA"
+                    }
+                ],
+            "user_id": "5d081df871deea0dd14ce63a",
+            "entity_id": "a3fca6a8-7337-4951-b6d6-b98681bd82ac",
+            "version": "9301b274-4674-4a0e-9d92-b85b08dfbdea",
+            "changed_on": "2019-06-20T03:39:23Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed. Wrong type for key-val pair {KEY}"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. Missing required key-val pair {KEY}"
+        }
+
++ Response 409 (application/json)
+
+        {
+            "error": "The request could not be completed due to a conflict with the current state of the resource"
+        }
+
++ Response 415 (application/json)
+
+        {
+            "error": "Unsupported media type. Error with logo PNG. Unable to decode base64-PNG"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+## brands - brand by id [/brands/{entity_id}]
+
+### Get [GET]
+
+Gets a brand by its id
+
++ Parameters
+    + `entity_id` (string) - `a3fca6a8-7337-4951-b6d6-b98681bd82ac` entity id of the brand
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: ad51d5ac-17bb-4240-8648-c483b224b2aa
+
++ Response 200 (application/json)
+
+        {
+            "name": "Carlsberg Club Soda",
+            "supplier_id": "ad51d5ac-17bb-4240-8648-c483b224b2aa",
+            "core_or_seasonal": "seasonal",
+            "is_active": false,
+            "has_logo": true,
+            "abv": 0.85,
+            "available_date": "2019-10-21",
+            "state_registrations": [
+                    {
+                        "state": "AL",
+                        "registrationNumber": "5934JF-6Y"
+                    },
+                    {
+                        "state": "NJ",
+                        "registrationNumber": "HG89-MW-5QA"
+                    }
+                ],
+            "user_id": "5d081df871deea0dd14ce63a",
+            "entity_id": "a3fca6a8-7337-4951-b6d6-b98681bd82ac",
+            "version": "9301b274-4674-4a0e-9d92-b85b08dfbdea",
+            "changed_on": "2019-06-20T03:39:23Z"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+### Delete [DELETE]
+
+Deletes a brand by its id
+
++ Parameters
+    + `entity_id` (string) - `a3fca6a8-7337-4951-b6d6-b98681bd82ac` entity id of the brand
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: ad51d5ac-17bb-4240-8648-c483b224b2aa
+
++ Response 204
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+## Containers [/containers]
+
+This resource contains information on containers.
+
+### Get all [GET]
+
+Get all containers
+
++ Request
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
++ Response 200 (application/json)
+
+        [
+            {
+                "supplier_id": "60701b3a-6aca-40cf-95ae-03eab68c23e0",
+                "volume": 0.094,
+                "global": true,
+                "name": "twelve ounce bottle",
+                "volume_uom": "gallon",
+                "user_id": "5d26bc028fc6c70caaa8fa7d",
+                "type": "can",
+                "entity_id": "ed45c672-7875-4fd1-8e04-d5969ae47d33",
+                "version": "c335cc6c-ad44-44e9-8a90-9745cf520fb6",
+                "changed_on": "2019-07-27T14:20:11Z"
+            }
+        ]
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+### Add [POST]
+
+Adds a new container
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 60701b3a-6aca-40cf-95ae-03eab68c23e0
+
+    + Body
+
+            {
+                "name": "twelve ounce bottle",
+                "volume": 0.09375,
+                "volume_uom": "gallon",
+                "type": "can",
+                "global": true
+            }
+
++ Response 200 (application/json)
+
+        {
+            "name": "twelve ounce bottle",
+            "volume": 0.09375,
+            "volume_uom": "gallon",
+            "type": "can",
+            "global": true,
+            "supplier_id": "60701b3a-6aca-40cf-95ae-03eab68c23e0",
+            "user_id": "5d081df871deea0dd14ce63a",
+            "entity_id": "f0b7bdce-34eb-46ee-b3e0-6a627012a320",
+            "version": "036fe456-8ae7-4a3a-8a61-b3ea4e13999f",
+            "changed_on": "2019-06-21T11:11:36Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 409 (application/json)
+
+        {
+            "error": "The request could not be completed due to a conflict with the current state of the resource"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+### Update [PUT]
+
+Update an existing container
+
+Note: This method does not allow updating base attributes of the resource, this will lead to a `409` error.
+Base attributes include `entity_id`, `version`, `changed_by_id` and `changed_on`.
+
+The ideal way to update is to GET a container, modify the key-value pairs in that JSON data and
+pass it as body in a request to this endpoint
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 60701b3a-6aca-40cf-95ae-03eab68c23e0
+
+    + Body
+
+            {
+                "name": "six ounce bottle",
+                "volume": 0.046875,
+                "volume_uom": "gallon",
+                "type": "can",
+                "global": false,
+                "supplier_id": "60701b3a-6aca-40cf-95ae-03eab68c23e0",
+                "user_id": "5d081df871deea0dd14ce63a",
+                "entity_id": "f0b7bdce-34eb-46ee-b3e0-6a627012a320",
+                "version": "036fe456-8ae7-4a3a-8a61-b3ea4e13999f",
+                "changed_on": "2019-06-21T11:11:36Z"
+            }
+
++ Response 200 (application/json)
+
+        {
+            "name": "six ounce bottle",
+            "volume": 0.046875,
+            "volume_uom": "gallon",
+            "type": "can",
+            "global": false,
+            "supplier_id": "60701b3a-6aca-40cf-95ae-03eab68c23e0",
+            "user_id": "5d081df871deea0dd14ce63a",
+            "entity_id": "f0b7bdce-34eb-46ee-b3e0-6a627012a320",
+            "version": "036fe456-8ae7-4a3a-8a61-b3ea4e13999f",
+            "changed_on": "2019-06-21T11:11:36Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 409 (application/json)
+
+        {
+            "error": "The request could not be completed due to a conflict with the current state of the resource"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+## Containers - container by id [/containers/{entity_id}]
+
+### Get [GET]
+
+Gets a container by its id
+
++ Parameters
+    + `entity_id` (string) - `f0b7bdce-34eb-46ee-b3e0-6a627012a320` entity id of the container
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 60701b3a-6aca-40cf-95ae-03eab68c23e0
+
++ Response 200 (application/json)
+
+        {
+            "name": "six ounce bottle",
+            "volume": 0.046875,
+            "volume_uom": "gallon",
+            "type": "can",
+            "global": false,
+            "supplier_id": "60701b3a-6aca-40cf-95ae-03eab68c23e0",
+            "user_id": "5d081df871deea0dd14ce63a",
+            "entity_id": "f0b7bdce-34eb-46ee-b3e0-6a627012a320",
+            "version": "036fe456-8ae7-4a3a-8a61-b3ea4e13999f",
+            "changed_on": "2019-06-21T11:11:36Z"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+### Delete [DELETE]
+
+Deletes a container by its id
+
++ Parameters
+    + `entity_id` (string) - `f0b7bdce-34eb-46ee-b3e0-6a627012a320` entity id of the container
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 60701b3a-6aca-40cf-95ae-03eab68c23e0
+
++ Response 204
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+## Count [/counts]
+
+This resource contains information on Count,  a physical inventory of products on hand.
+
+### Get all [GET]
+
+Get all counts
+
++ Request
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
++ Response 200 (application/json)
+
+        [
+            {
+                "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+                "count_date": "2019-08-21",
+                "package_types": [
+                    "789de8ff-82e3-4172-9758-39e0629c7a15"
+                ],
+                "products": [
+                    {
+                        "brand_id": "17e8fe06-881b-4cc8-af4d-9d7d80fb1d36",
+                        "package_type_id": "789de8ff-82e3-4172-9758-39e0629c7a15",
+                        "brand_name": "brewberry",
+                        "package_type_name ": "box square",
+                        "units_per_pallet": 7,
+                        "unit_quantity": 0,
+                        "pallet_quantity": 100
+                    }
+                ],
+                "status": "status",
+                "user_id": "5d26bc028fc6c70caaa8fa7d",
+                "entity_id": "f14d9f6e-6579-44eb-b635-0bc46704a796",
+                "version": "1c7e2dab-cc77-4761-bb6b-4bae29c7f3da",
+                "changed_on": "2019-07-29T19:58:56Z"
+            }
+        ]
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+### Add [POST]
+
+Adds a new count record
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
+    + Body
+
+            {
+                "count_date": "2019-08-12",
+                "package_types": [
+                    "789de8ff-82e3-4172-9758-39e0629c7a15"
+                ],
+                "products": [
+                    {
+                        "brand_id": "17e8fe06-881b-4cc8-af4d-9d7d80fb1d36",
+                        "package_type_id": "789de8ff-82e3-4172-9758-39e0629c7a15",
+                        "brand_name": "brewberry",
+                        "package_type_name ": "box square",
+                        "units_per_pallet": 7,
+                        "unit_quantity": 0,
+                        "pallet_quantity": 100
+                    }
+                ],
+                "status": "status"
+            }
+
+
+
++ Response 200 (application/json)
+
+        {
+            "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+            "count_date": "2019-08-12",
+            "package_types": [
+                "789de8ff-82e3-4172-9758-39e0629c7a15"
+            ],
+            "products": [
+                {
+                    "brand_id": "17e8fe06-881b-4cc8-af4d-9d7d80fb1d36",
+                    "package_type_id": "789de8ff-82e3-4172-9758-39e0629c7a15",
+                    "brand_name": "brewberry",
+                    "package_type_name ": "box square",
+                    "units_per_pallet": 7,
+                    "unit_quantity": 0,
+                    "pallet_quantity": 100
+                }
+            ],
+            "status": "status",
+            "user_id": "5d26bc028fc6c70caaa8fa7d",
+            "entity_id": "f14d9f6e-6579-44eb-b635-0bc46704a796",
+            "version": "9b2924f8-7173-47cf-bc55-f2de1fe8804c",
+            "changed_on": "2019-07-29T19:58:56Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+### Update [PUT]
+
+Update an existing count record
+
+Note: This method does not allow updating base attributes of the resource, this will lead to a `409` error.
+Base attributes include `entity_id`, `version`, `changed_by_id` and `changed_on`.
+
+The ideal way to update is to GET a count, modify the key-value pairs in that JSON data and
+pass it as body in a request to this endpoint
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
+    + Body
+
+            {
+                "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+                "count_date": "2019-08-21",
+                "package_types": [
+                    "789de8ff-82e3-4172-9758-39e0629c7a15"
+                ],
+                "products": [
+                    {
+                        "brand_id": "17e8fe06-881b-4cc8-af4d-9d7d80fb1d36",
+                        "package_type_id": "789de8ff-82e3-4172-9758-39e0629c7a15",
+                        "brand_name": "brewberry",
+                        "package_type_name ": "box square",
+                        "units_per_pallet": 7,
+                        "unit_quantity": 0,
+                        "pallet_quantity": 100
+                    }
+                ],
+                "status": "status",
+                "user_id": "5d26bc028fc6c70caaa8fa7d",
+                "entity_id": "f14d9f6e-6579-44eb-b635-0bc46704a796",
+                "version": "9b2924f8-7173-47cf-bc55-f2de1fe8804c",
+                "changed_on": "2019-07-29T19:58:56Z"
+            }
+
++ Response 200 (application/json)
+
+        {
+            "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+            "count_date": "2019-08-21",
+            "package_types": [
+                "789de8ff-82e3-4172-9758-39e0629c7a15"
+            ],
+            "products": [
+                {
+                    "brand_id": "17e8fe06-881b-4cc8-af4d-9d7d80fb1d36",
+                    "package_type_id": "789de8ff-82e3-4172-9758-39e0629c7a15",
+                    "brand_name": "brewberry",
+                    "package_type_name ": "box square",
+                    "units_per_pallet": 7,
+                    "unit_quantity": 0,
+                    "pallet_quantity": 100
+                }
+            ],
+            "status": "status",
+            "user_id": "5d26bc028fc6c70caaa8fa7d",
+            "entity_id": "f14d9f6e-6579-44eb-b635-0bc46704a796",
+            "version": "1c7e2dab-cc77-4761-bb6b-4bae29c7f3da",
+            "changed_on": "2019-07-29T19:58:56Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 409 (application/json)
+
+        {
+            "error": "The request could not be completed due to a conflict with the current state of the resource"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+## Counts - in date range [/counts/between/{min_count_date}/{max_count_date}]
+
+### Get [GET]
+
+Get a list of counts filtered by `count_date` date range. The filtered list is inclusive of the `min` and `max` count date.
+
++ Parameters
+    + `min_count_date` (date) - `2017-12-01` Date from which to retrieve counts (01, December, 2017)
+    + `max_count_date` (optional, date) - `2018-03-15` Date up to which to retrieve counts (15, March, 2018). If optionally left out, today's date is used instead.
+
++ Request
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 60701b3a-6aca-40cf-95ae-03eab68c23e0
+
++ Response 200 (application/json)
+
+            [
+                {
+                    "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+                    "count_date": "2019-08-21",
+                    "package_types": [
+                        "789de8ff-82e3-4172-9758-39e0629c7a15"
+                    ],
+                    "products": [
+                        {
+                            "brand_id": "17e8fe06-881b-4cc8-af4d-9d7d80fb1d36",
+                            "package_type_id": "789de8ff-82e3-4172-9758-39e0629c7a15",
+                            "brand_name": "brewberry",
+                            "package_type_name ": "box square",
+                            "units_per_pallet": 7,
+                            "unit_quantity": 0,
+                            "pallet_quantity": 100
+                        }
+                    ],
+                    "status": "status",
+                    "user_id": "5d26bc028fc6c70caaa8fa7d",
+                    "entity_id": "f14d9f6e-6579-44eb-b635-0bc46704a796",
+                    "version": "1c7e2dab-cc77-4761-bb6b-4bae29c7f3da",
+                    "changed_on": "2019-07-29T19:58:56Z"
+                }
+            ]
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+## Count - count by id [/counts/{entity_id}]
+
+### Get [GET]
+
+Gets an count by its id
+
++ Parameters
+    + `entity_id` (string) - `f14d9f6e-6579-44eb-b635-0bc46704a796` entity id of the count
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
++ Response 200 (application/json)
+
+        {
+            "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+            "count_date": "2019-08-21",
+            "package_types": [
+                "789de8ff-82e3-4172-9758-39e0629c7a15"
+            ],
+            "products": [
+                {
+                    "brand_id": "17e8fe06-881b-4cc8-af4d-9d7d80fb1d36",
+                    "package_type_id": "789de8ff-82e3-4172-9758-39e0629c7a15",
+                    "brand_name": "brewberry",
+                    "package_type_name ": "box square",
+                    "units_per_pallet": 7,
+                    "unit_quantity": 0,
+                    "pallet_quantity": 100
+                }
+            ],
+            "status": "status",
+            "user_id": "5d26bc028fc6c70caaa8fa7d",
+            "entity_id": "f14d9f6e-6579-44eb-b635-0bc46704a796",
+            "version": "1c7e2dab-cc77-4761-bb6b-4bae29c7f3da",
+            "changed_on": "2019-07-29T19:58:56Z"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+### Delete [DELETE]
+
+Deletes a count by its id
+
++ Parameters
+    + `entity_id` (string) - `f14d9f6e-6579-44eb-b635-0bc46704a796` entity id of the count
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
++ Response 204
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+## Distributor-Suppliers [/distributor-suppliers]
+
+This resource contains information on distributor-suppliers.
+
+### Get all [GET]
+
+Get all distributor-suppliers
+
++ Request
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-distributor-id: 5296779f-a64e-4c79-8ddb-9dacca9955b2
+
++ Response 200 (application/json)
+
+        [
+           {
+                "supplier_distributor_id": "d24f3d85-d604-4ef4-adcf-75e81dc937f8",
+                "supplier_id": "b9d6efbb-ee01-40d6-9735-a2e473d32628",
+                "nickname": "Brewberry Springs",
+                "access_code": "ECBWGW6RXY",
+                "distributor_id": "5296779f-a64e-4c79-8ddb-9dacca9955b2",
+                "user_id": "5e139449e5674e0ea2448f88",
+                "entity_id": "0e8d697f-6687-4f52-a7fb-01b6afaf2040",
+                "version": "8949acb2-6903-43ba-8a81-bf250e887371",
+                "changed_on": "2020-01-09T16:10:59Z"
+            }
+        ]
+
+### Add [POST]
+
+Adds a new distributor-supplier. The `access_code` field can be obtained by creating a
+supplier-distributor item and setting its `allow_order_updated` field to `True`. Please note,
+the `nickname` field can be generated from tables based on `access_code` and can be different from
+one in request body.
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-distributor-id: 5296779f-a64e-4c79-8ddb-9dacca9955b2
+
+    + Body
+
+            {
+                "supplier_distributor_id": "d24f3d85-d604-4ef4-adcf-75e81dc937f8",
+                "supplier_id": "b9d6efbb-ee01-40d6-9735-a2e473d32628",
+                "nickname": "none",
+                "access_code": "ECBWGW6RXY"
+            }
+
++ Response 200 (application/json)
+
+        {
+            "supplier_distributor_id": "d24f3d85-d604-4ef4-adcf-75e81dc937f8",
+            "supplier_id": "b9d6efbb-ee01-40d6-9735-a2e473d32628",
+            "nickname": "Brewberry",
+            "access_code": "ECBWGW6RXY",
+            "distributor_id": "5296779f-a64e-4c79-8ddb-9dacca9955b2",
+            "user_id": "5e139449e5674e0ea2448f88",
+            "entity_id": "0e8d697f-6687-4f52-a7fb-01b6afaf2040",
+            "version": "8949acb2-6903-43ba-8a81-bf250e887371",
+            "changed_on": "2020-01-09T16:10:59Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad parameter(s) in request"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Missing required key-value pair(s) in request body"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was Malformed. Wrong type for key-val pair {KEY}"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. Missing required key-val pair {KEY}"
+        }
+
++ Response 409 (application/json)
+
+        {
+            "error": "a distributor_supplier with the same name already exists"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Access denied"
+        }
+
+
+### Update [PUT]
+
+Update an existing distributor-supplier
+
+The ideal way to update is to GET a supplier, modify the key-value pairs in that JSON data and
+pass it as body in a request to this endpoint
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-distributor-id: 5296779f-a64e-4c79-8ddb-9dacca9955b2
+
+    + Body
+
+            {
+                "supplier_distributor_id": "d24f3d85-d604-4ef4-adcf-75e81dc937f8",
+                "supplier_id": "b9d6efbb-ee01-40d6-9735-a2e473d32628",
+                "nickname": "Brewberry Springs",
+                "access_code": "ECBWGW6RXY",
+                "distributor_id": "5296779f-a64e-4c79-8ddb-9dacca9955b2",
+                "user_id": "5e139449e5674e0ea2448f88",
+                "entity_id": "0e8d697f-6687-4f52-a7fb-01b6afaf2040",
+                "version": "8949acb2-6903-43ba-8a81-bf250e887371",
+                "changed_on": "2020-01-09T16:10:59Z"
+            }
+
++ Response 200 (application/json)
+
+        {
+            "supplier_distributor_id": "d24f3d85-d604-4ef4-adcf-75e81dc937f8",
+            "supplier_id": "b9d6efbb-ee01-40d6-9735-a2e473d32628",
+            "nickname": "Brewberry Springs",
+            "access_code": "ECBWGW6RXY",
+            "distributor_id": "5296779f-a64e-4c79-8ddb-9dacca9955b2",
+            "user_id": "5e139449e5674e0ea2448f88",
+            "entity_id": "0e8d697f-6687-4f52-a7fb-01b6afaf2040",
+            "version": "3edae150-d364-4c0f-bcba-21d0ce6d97fe",
+            "changed_on": "2020-01-09T16:18:06Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. Missing required key-val pair {KEY}"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad parameter(s) in request. entity_id in body must match x-distributor-id"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was Malformed. Wrong type for key-val pair {KEY}"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. Missing required key-val pair {KEY}"
+        }
+
++ Response 409 (application/json)
+
+        {
+            "error": "a distributor_supplier with the same name already exists"
+        }
+
+
+## Distributor-suppliers - distributor-supplier by id [/distributor-suppliers/{entity_id}]
+
+### Get [GET]
+
+Gets a distributor-supplier by its entity id
+
++ Parameters
+    + `entity_id` (string) - `0e8d697f-6687-4f52-a7fb-01b6afaf2040` entity id of the supplier
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-distributor-id: 5296779f-a64e-4c79-8ddb-9dacca9955b2
+
++ Response 200 (application/json)
+
+        {
+            "version": "438bd37f-1a2d-4b36-aef6-67575a482f87",
+            "access_code": "ECBWGW6RXY",
+            "supplier_distributor_id": "d24f3d85-d604-4ef4-adcf-75e81dc937f8",
+            "supplier_id": "b9d6efbb-ee01-40d6-9735-a2e473d32628",
+            "distributor_id": "5296779f-a64e-4c79-8ddb-9dacca9955b2",
+            "user_id": "5e139449e5674e0ea2448f88",
+            "changed_on": "2020-01-09T16:21:37Z",
+            "entity_id": "0e8d697f-6687-4f52-a7fb-01b6afaf2040",
+            "nickname": "Brewberry"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. distributor_id is not associated with the user"
+        }
+
+### Delete [DELETE]
+
+Deletes a distributor-suppliers by its id
+
++ Parameters
+    + `entity_id` (string) - `0e8d697f-6687-4f52-a7fb-01b6afaf2040` entity id of the supplier
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-distributor-id: 5296779f-a64e-4c79-8ddb-9dacca9955b2
+
++ Response 204
+
++ Response 404 (application/json)
+
+        {
+            "error": "Bad request. Missing header x-distributor-id"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. distributor_id is not associated with the user"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. Admins only"
+        }
+
+## Distributors [/distributors]
+
+This resource contains information on distributors.
+
+### Get all [GET]
+
+Get all distributors
+
++ Request
+    + Headers
+
+            Authorization: Bearer ABCDEF
+
++ Response 200 (application/json)
+
+        [
+           {
+                "website": "acmeinc.com",
+                "place_id": "ChIJeVnFs7hTQIgRqHdgZo_zucU",
+                "address": "480  Barnes Avenue, Blue Ash",
+                "full_name": "Acme Corporation",
+                "name": "Acme",
+                "state": "OH",
+                "user_id": "5d68d53c8aeba20f26411e5d",
+                "users": [
+                    {
+                        "user_id": "5d68d53c8aeba20f26411e5d",
+                        "user_name": "mzl28244@bcaoo.com",
+                        "role": "admin"
+                    }
+                ],
+                "entity_id": "7b07c140-d2f0-4694-9c1c-89799b3979ea",
+                "version": "c8a45deb-f973-4dfd-9ba0-9d3f25836cf9",
+                "changed_on": "2019-09-16T10:07:12Z"
+            }
+        ]
+
+### Add [POST]
+
+Adds a new distributor
+
+"users" list property cannot be updated through this endpoint. Its set automatically.
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer ABCDEF
+
+    + Body
+
+            {
+                "name": "Acme",
+                "full_name": "Acme Corporation",
+                "address": "480  Barnes Avenue, Blue Ash",
+                "state": "OH",
+                "place_id": "ChIJeVnFs7hTQIgRqHdgZo_zucU",
+                "website": "acmeinc.com"
+            }
+
++ Response 200 (application/json)
+
+        {
+            "name": "Acme",
+            "full_name": "Acme Corporation",
+            "address": "480  Barnes Avenue, Blue Ash",
+            "state": "OH",
+            "place_id": "ChIJeVnFs7hTQIgRqHdgZo_zucU",
+            "website": "acmeinc.com",
+            "user_id": "5d68d53c8aeba20f26411e5d",
+            "users": [
+                {
+                    "user_id": "5d68d53c8aeba20f26411e5d",
+                    "user_name": "mzl28244@bcaoo.com",
+                    "role": "admin"
+                }
+            ],
+            "entity_id": "7b07c140-d2f0-4694-9c1c-89799b3979ea",
+            "version": "c8a45deb-f973-4dfd-9ba0-9d3f25836cf9",
+            "changed_on": "2019-09-16T10:07:12Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "users property cannot be updated through this endpoint"
+        }
+
+
+### Update [PUT]
+
+Update an existing distributor
+
+"users" list property cannot be updated through this endpoint. Its set automatically.
+
+The ideal way to update is to GET a supplier, modify the key-value pairs in that JSON data and
+pass it as body in a request to this endpoint
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-distributor-id: 7b07c140-d2f0-4694-9c1c-89799b3979ea
+
+    + Body
+
+            {
+                "website": "acmeinc.us",
+                "place_id": "ChIJeVnFs7hTQIgRqHdgZo_zucU",
+                "address": "480  Barnes Avenue, Blue Ash",
+                "full_name": "Acme Corporation",
+                "name": "Acme",
+                "state": "ohio",
+                "user_id": "5d68d53c8aeba20f26411e5d",
+                "users": [
+                    {
+                        "user_id": "5d68d53c8aeba20f26411e5d",
+                        "user_name": "mzl28244@bcaoo.com",
+                        "role": "admin"
+                    }
+                ],
+                "entity_id": "7b07c140-d2f0-4694-9c1c-89799b3979ea",
+                "version": "c8a45deb-f973-4dfd-9ba0-9d3f25836cf9",
+                "changed_on": "2019-09-16T10:07:12Z"
+            }
+
++ Response 200 (application/json)
+
+        {
+            "name": "Acme",
+            "full_name": "Acme Corporation",
+            "website": "acmeinc.us",
+            "address": "480  Barnes Avenue, Blue Ash",
+            "state": "ohio",
+            "place_id": "ChIJeVnFs7hTQIgRqHdgZo_zucU",
+            "website": "acmeinc.com",
+            "user_id": "5d68d53c8aeba20f26411e5d",
+            "users": [
+                {
+                    "user_id": "5d68d53c8aeba20f26411e5d",
+                    "user_name": "mzl28244@bcaoo.com",
+                    "role": "admin"
+                }
+            ],
+            "entity_id": "7b07c140-d2f0-4694-9c1c-89799b3979ea",
+            "version": "85f160f9-8d41-406b-b186-6406bc848c0c",
+            "changed_on": "2019-09-16T11:13:35Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. Missing required key-val pair {KEY}"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad parameter(s) in request. entity_id in body must match x-distributor-id"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. Unknown Main Contact"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+
+## Distributors - Manage users under distributor [/distributors/users]
+
+### Get all users [GET]
+
+Get all users associated with a distributor
+
++ Request
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-distributor-id: 7b07c140-d2f0-4694-9c1c-89799b3979ea
+
++ Response 200 (application/json)
+
+        [
+            {
+                "email": "szi63337@bcaoo.com",
+                "name": "John",
+                "role": "admin",
+                "user_id": "5d26d828fe86a90c7c8c0a64"
+            },
+            {
+                "email": "glw75630@bcaoo.com",
+                "name": "Jim",
+                "role": "admin",
+                "user_id": "5d45eb167d59560e83000b6c"
+            }
+        ]
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. Admins only"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. distributor_id is not associated with the user"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "error": "Distributor not found"
+        }
+
+### Add or Update User [POST]
+
+Adds or Updates a new or existing user to a distributor.
+Please note: The `user_id` returned is the user_id of the user added to the supplier.
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-distributor-id: 7b07c140-d2f0-4694-9c1c-89799b3979ea
+
+    + Body
+
+            {
+                "email": "szi63337@bcaoo.com",
+                "name": "John Smith",
+                "role": "user"
+            }
+
++ Response 200 (application/json)
+
+        {
+            "name": "John Smith",
+            "role": "user",
+            "user_id": "5d081df871deea0dd14ce63a"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. Admins only"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. distributor_id is not associated with the user"
+        }
+
+## Distributors - Remove user [/distributors/users/{user_id}]
+
+### Remove User [DELETE]
+
+Deletes a user from a distributor by their user_id. The current user should be an admin for the supplier to successfully carry out this delete.
+
++ Parameters
+    + `user_id` (string) - `5d081df871deea0dd14ce63a` user_id of the user in the supplier's list of users
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-distributor-id: 7b07c140-d2f0-4694-9c1c-89799b3979ea
+
++ Response 204
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. distributor_id is not associated with the user"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. Admins only"
+        }
+
+## Distributors - distributor by id [/distributors/{entity_id}]
+
+### Get [GET]
+
+Gets a distributor by its id
+
++ Parameters
+    + `entity_id` (string) - `5c516c03-2bb8-434b-9041-171eda2c5196` entity id of the supplier
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-distributor-id: 7b07c140-d2f0-4694-9c1c-89799b3979ea
+
++ Response 200 (application/json)
+
+        {
+            "website": "acmeinc.com",
+            "place_id": "ChIJeVnFs7hTQIgRqHdgZo_zucU",
+            "address": "480  Barnes Avenue, Blue Ash",
+            "full_name": "Acme Corporation",
+            "name": "Acme",
+            "state": "OH",
+            "user_id": "5d68d53c8aeba20f26411e5d",
+            "users": [
+                {
+                    "user_id": "5d68d53c8aeba20f26411e5d",
+                    "user_name": "mzl28244@bcaoo.com",
+                    "role": "admin"
+                }
+            ],
+            "entity_id": "7b07c140-d2f0-4694-9c1c-89799b3979ea",
+            "version": "c8a45deb-f973-4dfd-9ba0-9d3f25836cf9",
+            "changed_on": "2019-09-16T10:07:12Z"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. distributor_id is not associated with the user"
+        }
+
+### Delete [DELETE]
+
+Deletes a distributor by its id
+
++ Parameters
+    + `entity_id` (string) - `5c516c03-2bb8-434b-9041-171eda2c5196` entity id of the supplier
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-distributor-id: 7b07c140-d2f0-4694-9c1c-89799b3979ea
+
++ Response 204
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. distributor_id is not associated with the user"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. Admins only"
+        }
+
+
+## Inventory - by date range [/inventory/{start_date}/{end_date}]
+
+### Get [GET]
+
+Get a list of products' analytics info like total production, sales etc.
+
++ Parameters
+    + `start_date` (date) - `2017-12-01` Date from which to retrieve data (01, December, 2017)
+    + `end_date` (optional, date) - `2018-03-15` Date up to which to retrieve data (15, March, 2018). If optionally left out, today's date is used instead.
+
++ Request
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
++ Response 200 (application/json)
+
+            [
+                {
+                    "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+                    "brand_id": "52eaac71-5b58-48d4-9fcd-c3c062505e4a",
+                    "package_type_id": "c86a1d65-df06-4ee5-bb0a-181c07d061e7",
+                    "produced": 26,
+                    "sales": 26,
+                    "adjustment": 26,
+                    "on_hand_start": 5,
+                    "on_hand_end": 8
+                },
+                {
+                    "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+                    "brand_id": "066823ed-d74b-4a3e-ae2b-e039a0367f22",
+                    "package_type_id": "b48b35a4-ee11-4a2b-a9e9-35583299ba29",
+                    "produced": 20,
+                    "sales": 15,
+                    "adjustment": 10,
+                    "on_hand_start": 25,
+                    "on_hand_end": 25
+                }
+            ]
+
+## Login [/login]
+
+This is a public endpoint that is used to login users to Prolance. It provides a way to get the `id_token` required to access private resources.
+
+### Login [POST]
+
+Login user
+
++ Request (application/json)
+
+    + Body
+
+            {
+              "username": "john.doe@email.com",
+              "password": "SuperSecret123!"
+            }
+
++ Response 200 (application/json)
+
+        {
+            "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6IlFrSXpSVFkxTlRjMk1ESkVRVFJEUkRFeFF6RTBOekl3T1RnMlF6RkZNalExUWpNMlJFWXdNdyJ9.eyJpc3MiOiJodHRwczovL25lb3RoZWljZWJpcmQuYXV0aDAuY29tLyIsInN1YiI6ImF1dGgwfDVjZjNiY2Q2NDQwMDhiMGU3ZTJiOWM3MiIsImF1ZCI6WyJodHRwczovL25lb3RoZWljZWJpcmQuYXV0aDAuY29tL2FwaS92Mi8iLCJodHRwczovL25lb3RoZWljZWJpcmQuYXV0aDAuY29tL3VzZXJpbmZvIl0sImlhdCI6MTU1OTQ3ODE2NiwiZXhwIjoxNTU5NTY0NTY2LCJhenAiOiI1MHQxeTZKYUpnY3dNbHhVaVdoRGN2NzBRS2t1WFFrcCIsInNjb3BlIjoib3BlbmlkIHByb2ZpbGUgZW1haWwgYWRkcmVzcyBwaG9uZSByZWFkOmN1cnJlbnRfdXNlciB1cGRhdGU6Y3VycmVudF91c2VyX21ldGFkYXRhIGRlbGV0ZTpjdXJyZW50X3VzZXJfbWV0YWRhdGEgY3JlYXRlOmN1cnJlbnRfdXNlcl9tZXRhZGF0YSBjcmVhdGU6Y3VycmVudF91c2VyX2RldmljZV9jcmVkZW50aWFscyBkZWxldGU6Y3VycmVudF91c2VyX2RldmljZV9jcmVkZW50aWFscyB1cGRhdGU6Y3VycmVudF91c2VyX2lkZW50aXRpZXMiLCJndHkiOiJwYXNzd29yZCJ9.tNRppTk19rNEndb4-RDfboe5_DrvB1JJfgie_K869hBPmVRsnO0nslItjF9ol6GY7UmbMxQRm9k7eNqQpWxkBdYt6cceFMrfcCJmOzxwNiK6zv3pPIX5BQgpUJIa0UwTMSvxYwzuOhs_MTPmfL0ndw4CgPS7V0ypI2MXkJTBPCGdcBidSQtQzE3UenVoE7azDKhg9Vk9pAI_b7SGJAkrP1duv4OkRXi4ptZJSvXRFYy3GfT1lRk77_-h_S7qzI-IHrCjtkQjmO1MHTW5FROy_rd5jDGE21if40F7WdpP9p-bomwaVIbntEbOSznlYw5DuLfC7nHpNWpb5fG0t8LizA",
+            "id_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6IlFrSXpSVFkxTlRjMk1ESkVRVFJEUkRFeFF6RTBOekl3T1RnMlF6RkZNalExUWpNMlJFWXdNdyJ9.eyJuaWNrbmFtZSI6Ink0ODU2MjEiLCJuYW1lIjoieTQ4NTYyMUBud3l0Zy5uZXQiLCJwaWN0dXJlIjoiaHR0cHM6Ly9zLmdyYXZhdGFyLmNvbS9hdmF0YXIvZDE0ODI5ZTEwZjhlODExZDE0ZWZiZDQ3ODRjOGQwODg_cz00ODAmcj1wZyZkPWh0dHBzJTNBJTJGJTJGY2RuLmF1dGgwLmNvbSUyRmF2YXRhcnMlMkZ5NC5wbmciLCJ1cGRhdGVkX2F0IjoiMjAxOS0wNi0wMlQxMjoyMjo0Ni4zOThaIiwiZW1haWwiOiJ5NDg1NjIxQG53eXRnLm5ldCIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJpc3MiOiJodHRwczovL25lb3RoZWljZWJpcmQuYXV0aDAuY29tLyIsInN1YiI6ImF1dGgwfDVjZjNiY2Q2NDQwMDhiMGU3ZTJiOWM3MiIsImF1ZCI6IjUwdDF5NkphSmdjd01seFVpV2hEY3Y3MFFLa3VYUWtwIiwiaWF0IjoxNTU5NDc4MTY2LCJleHAiOjE1NTk1MTQxNjZ9.gqH6LpGz9WyoDRVLyPElfZGshp868kdaiA0QSr6AsDZcPuK4sxnKZUg4N8m53rOQKnRbw7Wmlps4uTi3LPwrfo0z3k6AKzd4CGLKbiJV4_-vbYwTSxY6bdvwt-MuM6cCgGbknS9LxcZo-bu-LBhpxNt2Bdiatg021s4hNA1CILp9Z2gbJOmnjiKEqaildYWxGzXZWCK99PPo3829xlEGGEqclGC3Bif9P1LaxcYLSLll20zJZBMOXhX-t_9IzolR5l4Q5bUqAkz59bHRBWeAHmnS1d2rDmRaVTD2L0wx_cKb7yxvPLL4J0v0cyLLw0p9H43feb4y-C456Fu4951m4A",
+            "scope": "openid profile email address phone read:current_user update:current_user_metadata delete:current_user_metadata create:current_user_metadata create:current_user_device_credentials delete:current_user_device_credentials update:current_user_identities",
+            "expires_in": 86400,
+            "token_type": "Bearer"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 500 (application/json)
+
+        {
+            "error": "Unknown error happened"
+        }
+
+## Merchandise [/merchandise]
+
+This resource contains merchandise items like t-shirts, stickers, tap handles etc
+
+### Get all [GET]
+
+Get all merchandise
+
++ Request
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
++ Response 200 (application/json)
+
+            [
+                {
+                    "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+                    "name": "t-shirt",
+                    "price": 24.99,
+                    "on_hand": 20,
+                    "has_sizes": true,
+                    "sizes": [
+                        {
+                            "size": "M",
+                            "price": 24.99,
+                            "on_hand": 15
+                        },
+                        {
+                            "size": "L",
+                            "price": 24.99,
+                            "on_hand": 5
+                        }
+                    ],
+                    "user_id": "5d26bc028fc6c70caaa8fa7d",
+                    "entity_id": "9b19b67d-6270-4d41-8c51-f9e2e001f010",
+                    "version": "68bd0c2e-363c-49d2-b970-12d16b6c5bed",
+                    "changed_on": "2019-07-27T14:22:01Z"
+                }
+            ]
+
+### Add [POST]
+
+Adds a merchandise
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
+    + Body
+
+            {
+                "name": "t-shirt",
+                "price": 24.99,
+                "on_hand": 20,
+                "has_sizes": true,
+                "sizes": [
+                    {
+                        "size": "M",
+                        "price": 24.99,
+                        "on_hand": 15
+                    },
+                    {
+                        "size": "L",
+                        "price": 24.99,
+                        "on_hand": 5
+                    }
+                ]
+            }
+
++ Response 200 (application/json)
+
+        {
+            "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+            "name": "t-shirt",
+            "price": 24.99,
+            "on_hand": 20,
+            "has_sizes": true,
+            "sizes": [
+                {
+                    "size": "M",
+                    "price": 24.99,
+                    "on_hand": 15
+                },
+                {
+                    "size": "L",
+                    "price": 24.99,
+                    "on_hand": 5
+                }
+            ],
+            "user_id": "5d26bc028fc6c70caaa8fa7d",
+            "entity_id": "9b19b67d-6270-4d41-8c51-f9e2e001f010",
+            "version": "68bd0c2e-363c-49d2-b970-12d16b6c5bed",
+            "changed_on": "2019-07-27T14:22:01Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. Missing required key-val pair {KEY}"
+        }
+
+
+### Update [PUT]
+
+Update an existing merchandise record
+
+The ideal way to update is to GET a merchandise record, modify the key-value pairs in that JSON data and
+pass it as body in a request to this endpoint
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
+    + Body
+
+            {
+                "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+                "name": "beer pong hero - graphic t-shirt",
+                "price": 24.99,
+                "on_hand": 25,
+                "has_sizes": true,
+                "sizes": [
+                    {
+                        "size": "M",
+                        "price": 24.99,
+                        "on_hand": 15
+                    },
+                    {
+                        "size": "L",
+                        "price": 24.99,
+                        "on_hand": 5
+                    },
+                    {
+                        "size": "S",
+                        "price": 24.99,
+                        "on_hand": 5
+                    }
+                ],
+                "user_id": "5d26bc028fc6c70caaa8fa7d",
+                "entity_id": "9b19b67d-6270-4d41-8c51-f9e2e001f010",
+                "version": "68bd0c2e-363c-49d2-b970-12d16b6c5bed",
+                "changed_on": "2019-07-27T14:22:01Z"
+            }
+
++ Response 200 (application/json)
+
+        {
+            "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+            "name": "beer pong hero - graphic t-shirt",
+            "price": 24.99,
+            "on_hand": 25,
+            "has_sizes": true,
+            "sizes": [
+                {
+                    "size": "M",
+                    "price": 24.99,
+                    "on_hand": 15
+                },
+                {
+                    "size": "L",
+                    "price": 24.99,
+                    "on_hand": 5
+                },
+                {
+                    "size": "S",
+                    "price": 24.99,
+                    "on_hand": 5
+                }
+            ],
+            "user_id": "5d26bc028fc6c70caaa8fa7d",
+            "entity_id": "9b19b67d-6270-4d41-8c51-f9e2e001f010",
+            "version": "68bd0c2e-363c-49d2-b970-12d16b6c5bed",
+            "changed_on": "2019-07-27T14:22:01Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. Missing required key-val pair {KEY}"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "error": "{RESOURCE} Resource not found"
+        }
+
+## Merchandise - item by id [/merchandise/{entity_id}]
+
+### Get [GET]
+
+Gets a merchandise by its id
+
++ Parameters
+    + `entity_id` (string) - `9b19b67d-6270-4d41-8c51-f9e2e001f010` entity id of the merchandise
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
++ Response 200 (application/json)
+
+        {
+            "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+            "name": "beer pong hero - t-shirt",
+            "price": 24.99,
+            "on_hand": 25,
+            "has_sizes": true,
+            "sizes": [
+                {
+                    "size": "M",
+                    "price": 24.99,
+                    "on_hand": 15
+                },
+                {
+                    "size": "L",
+                    "price": 24.99,
+                    "on_hand": 5
+                },
+                {
+                    "size": "S",
+                    "price": 24.99,
+                    "on_hand": 5
+                }
+            ],
+            "user_id": "5d26bc028fc6c70caaa8fa7d",
+            "entity_id": "9b19b67d-6270-4d41-8c51-f9e2e001f010",
+            "version": "68bd0c2e-363c-49d2-b970-12d16b6c5bed",
+            "changed_on": "2019-07-27T14:22:01Z"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
+### Delete [DELETE]
+
+Deletes a merchandise record by its id
+
++ Parameters
+    + `entity_id` (string) - `9b19b67d-6270-4d41-8c51-f9e2e001f010` entity id of the merchandise
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
++ Response 204
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
+## OnHand Inventory [/on-hand]
+
+This resource contains information on inventory items on hand.
+
+### Get all [GET]
+
+Get all on-hand items
+
++ Request
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
++ Response 200 (application/json)
+
+        [
+            {
+                "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+                "product_id": "581fa2a2-631d-4ec4-83a7-c905859681ec",
+                "quantity": 30,
+                "observation_date": "2018-12-02",
+                "actual": false,
+                "user_id": "5d26bc028fc6c70caaa8fa7d",
+                "entity_id": "ac3deff4-653b-4aa8-96ad-84abb98546fe",
+                "version": "bf261ae7-a34b-40e6-8e1f-640f78c0fee0",
+                "changed_on": "2019-07-29T20:03:43Z"
+            }
+        ]
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+### Add [POST]
+
+Adds a new on-hand record
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
+    + Body
+
+            {
+                "product_id": "581fa2a2-631d-4ec4-83a7-c905859681ec",
+                "quantity": 25,
+                "observation_date": "2018-12-01",
+                "actual": true
+            }
+
+
++ Response 200 (application/json)
+
+        {
+            "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+            "product_id": "581fa2a2-631d-4ec4-83a7-c905859681ec",
+            "quantity": 25,
+            "observation_date": "2018-12-01",
+            "actual": true,
+            "user_id": "5d26bc028fc6c70caaa8fa7d",
+            "entity_id": "ac3deff4-653b-4aa8-96ad-84abb98546fe",
+            "version": "58d4568d-6c64-4213-88fb-7ed7438dbda0",
+            "changed_on": "2019-07-29T20:02:07Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 409 (application/json)
+
+        {
+            "error": "The request could not be completed due to a conflict with the current state of the resource"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+### Update [PUT]
+
+Update an existing on-hand record
+
+Note: This method does not allow updating base attributes of the resource, this will lead to a `409` error.
+Base attributes include `entity_id`, `version`, `changed_by_id` and `changed_on`.
+
+The ideal way to update is to GET a on-hand record, modify the key-value pairs in that JSON data and
+pass it as body in a request to this endpoint
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
+    + Body
+
+            {
+                "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+                "product_id": "581fa2a2-631d-4ec4-83a7-c905859681ec",
+                "quantity": 30,
+                "observation_date": "2018-12-02",
+                "actual": false,
+                "user_id": "5d26bc028fc6c70caaa8fa7d",
+                "entity_id": "ac3deff4-653b-4aa8-96ad-84abb98546fe",
+                "version": "58d4568d-6c64-4213-88fb-7ed7438dbda0",
+                "changed_on": "2019-07-29T20:02:07Z"
+            }
+
++ Response 200 (application/json)
+
+        {
+            "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+            "product_id": "581fa2a2-631d-4ec4-83a7-c905859681ec",
+            "quantity": 30,
+            "observation_date": "2018-12-02",
+            "actual": false,
+            "user_id": "5d26bc028fc6c70caaa8fa7d",
+            "entity_id": "ac3deff4-653b-4aa8-96ad-84abb98546fe",
+            "version": "bf261ae7-a34b-40e6-8e1f-640f78c0fee0",
+            "changed_on": "2019-07-29T20:03:43Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 409 (application/json)
+
+        {
+            "error": "The request could not be completed due to a conflict with the current state of the resource"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+## OnHand Inventory - on-hand by id [/on-hand/{entity_id}]
+
+### Get [GET]
+
+Gets an on-hand record by its id
+
++ Parameters
+    + `entity_id` (string) - `9891ce1d-6bef-4d1a-827f-cce449cb0297` entity id of the on-hand record
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
++ Response 200 (application/json)
+
+        {
+            "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+            "product_id": "581fa2a2-631d-4ec4-83a7-c905859681ec",
+            "quantity": 30,
+            "observation_date": "2018-12-02",
+            "actual": false,
+            "user_id": "5d26bc028fc6c70caaa8fa7d",
+            "entity_id": "ac3deff4-653b-4aa8-96ad-84abb98546fe",
+            "version": "bf261ae7-a34b-40e6-8e1f-640f78c0fee0",
+            "changed_on": "2019-07-29T20:03:43Z"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+### Delete [DELETE]
+
+Deletes a on-hand by its id
+
++ Parameters
+    + `entity_id` (string) - `9891ce1d-6bef-4d1a-827f-cce449cb0297` entity id of the on-hand record
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
++ Response 204
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+## Package Types [/package-types]
+
+This resource contains information on package types.
+
+### Get all [GET]
+
+Get all package types
+
++ Request
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
++ Response 200 (application/json)
+
+        [
+            {
+                "quantity": 5,
+                "ordinal": 3,
+                "weight_uom": "kg",
+                "pallet_layer_max": 15,
+                "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+                "retail_package_id": "45213206-079d-469f-a11e-fb804b71a062",
+                "name": "can",
+                "weight": 2.5,
+                "user_id": "5d26bc028fc6c70caaa8fa7d",
+                "pallet_layer_quantity": 3,
+                "entity_id": "e2f49d3a-28e0-49ae-9b1c-eaeaa5cf1cd3",
+                "version": "dd9c9074-0dba-40c2-be0a-9e3b3e599317",
+                "changed_on": "2019-07-27T14:11:27Z"
+            }
+        ]
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+### Add [POST]
+
+Adds a new package type
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
+    + Body
+
+            {
+                "name": "can",
+                "quantity": 5,
+                "ordinal": 3,
+                "weight": 2.5,
+                "weight_uom": "kg",
+                "pallet_layer_quantity": 3,
+                "pallet_layer_max": 15,
+                "retail_package_id": "45213206-079d-469f-a11e-fb804b71a062"
+            }
+
+
++ Response 200 (application/json)
+
+        {
+            "name": "can",
+            "quantity": 5,
+            "ordinal": 3,
+            "weight": 2.5,
+            "weight_uom": "kg",
+            "pallet_layer_quantity": 3,
+            "pallet_layer_max": 15,
+            "retail_package_id": "45213206-079d-469f-a11e-fb804b71a062",
+            "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745"
+            "user_id": "5d081df871deea0dd14ce63a",
+            "entity_id": "581fa2a2-631d-4ec4-83a7-c905859681ec",
+            "version": "486fccaa-c7c2-43c9-824d-3464f315ed9e",
+            "changed_on": "2019-06-20T05:46:46Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. Missing required key-val pair {KEY}"
+        }
+
++ Response 409 (application/json)
+
+        {
+            "error": "The request could not be completed due to a conflict with the current state of the resource"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+### Update [PUT]
+
+Update an existing package type
+
+Note: This method does not allow updating base attributes of the resource, this will lead to a `409` error.
+Base attributes include `entity_id`, `version`, `changed_by_id` and `changed_on`.
+
+The ideal way to update is to GET a package type, modify the key-value pairs in that JSON data and
+pass it as body in a request to this endpoint
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
+    + Body
+
+            {
+                "name": "can",
+                "quantity": 5,
+                "ordinal": 2,
+                "weight": 2.5,
+                "weight_uom": "kg",
+                "pallet_layer_quantity": 3,
+                "pallet_layer_max": 15,
+                "retail_package_id": "45213206-079d-469f-a11e-fb804b71a062",
+                "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745"
+                "user_id": "5d081df871deea0dd14ce63a",
+                "entity_id": "581fa2a2-631d-4ec4-83a7-c905859681ec",
+                "version": "486fccaa-c7c2-43c9-824d-3464f315ed9e",
+                "changed_on": "2019-06-20T05:46:46Z"
+            }
+
++ Response 200 (application/json)
+
+        {
+            "name": "can",
+            "quantity": 6,
+            "ordinal": 2,
+            "weight": 2.8,
+            "weight_uom": "kg",
+            "pallet_layer_quantity": 4,
+            "pallet_layer_max": 15,
+            "retail_package_id": "45213206-079d-469f-a11e-fb804b71a062",
+            "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745"
+            "user_id": "5d081df871deea0dd14ce63a",
+            "entity_id": "581fa2a2-631d-4ec4-83a7-c905859681ec",
+            "version": "ad4f78d6-c228-4a9a-988a-609fc30724de",
+            "changed_on": "2019-06-20T05:46:46Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. Missing required key-val pair {KEY}"
+        }
+
++ Response 409 (application/json)
+
+        {
+            "error": "The request could not be completed due to a conflict with the current state of the resource"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+## Package Types - package type by id [/package-types/{entity_id}]
+
+### Get [GET]
+
+Gets a package type by its id
+
++ Parameters
+    + `entity_id` (string) - `581fa2a2-631d-4ec4-83a7-c905859681ec` entity id of the package type
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
++ Response 200 (application/json)
+
+        {
+            "name": "can",
+            "quantity": 6,
+            "ordinal": 2,
+            "weight": 2.8,
+            "weight_uom": "kg",
+            "pallet_layer_quantity": 4,
+            "pallet_layer_max": 15,
+            "retail_package_id": "45213206-079d-469f-a11e-fb804b71a062",
+            "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745"
+            "user_id": "5d081df871deea0dd14ce63a",
+            "entity_id": "581fa2a2-631d-4ec4-83a7-c905859681ec",
+            "version": "ad4f78d6-c228-4a9a-988a-609fc30724de",
+            "changed_on": "2019-06-20T05:46:46Z"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+### Delete [DELETE]
+
+Deletes a package type by its id
+
++ Parameters
+    + `entity_id` (string) - `581fa2a2-631d-4ec4-83a7-c905859681ec` entity id of the package type
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
++ Response 204
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+## Password Reset [/password-reset]
+
+This is a public endpoint that is used to reset users' password.
+
+### Reset [POST]
+
+Reset's user password
+
++ Request (application/json)
+
+    + Body
+
+            {
+                "email": "johnsmith@example.com"
+            }
+
++ Response 204
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "{Error message from Auth0}"
+        }
+
++ Response 500 (application/json)
+
+        {
+            "error": "Unknown error happened"
+        }
+
+## Production [/production]
+
+This resource contains information on product production that affects on-hand quantity.
+
+### Get all [GET]
+
+Get all production
+
++ Request
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 60701b3a-6aca-40cf-95ae-03eab68c23e0
+
++ Response 200 (application/json)
+
+            [
+                {
+                    "supplier_id": "60701b3a-6aca-40cf-95ae-03eab68c23e0",
+                    "products": [
+                        {
+                            "quantity": 6,
+                            "product_id": "3a29b58a-015f-4023-b048-21e24a33dba3"
+                        }
+                    ],
+                    "production_date": "2019-06-21",
+                    "notes": "production notes",
+                    "user_id": "5d26bc028fc6c70caaa8fa7d",
+                    "entity_id": "9b19b67d-6270-4d41-8c51-f9e2e001f010",
+                    "version": "68bd0c2e-363c-49d2-b970-12d16b6c5bed",
+                    "changed_on": "2019-07-27T14:22:01Z"
+                }
+            ]
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+### Add [POST]
+
+Adds a new production entry
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 60701b3a-6aca-40cf-95ae-03eab68c23e0
+
+    + Body
+
+            {
+                "products": [
+                    {
+                        "quantity": 6,
+                        "product_id": "3a29b58a-015f-4023-b048-21e24a33dba3"
+                    }
+                ],
+                "production_date": "2019-06-21",
+                "notes": "production notes"
+            }
+
++ Response 200 (application/json)
+
+        {
+            "supplier_id": "60701b3a-6aca-40cf-95ae-03eab68c23e0",
+            "products": [
+                {
+                    "quantity": 6,
+                    "product_id": "3a29b58a-015f-4023-b048-21e24a33dba3"
+                }
+            ],
+            "production_date": "2019-06-21",
+            "notes": "production notes",
+            "user_id": "5d26bc028fc6c70caaa8fa7d",
+            "entity_id": "9b19b67d-6270-4d41-8c51-f9e2e001f010",
+            "version": "68bd0c2e-363c-49d2-b970-12d16b6c5bed",
+            "changed_on": "2019-07-27T14:22:01Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+### Update [PUT]
+
+Update an existing production record
+
+Note: This method does not allow updating base attributes of the resource, this will lead to a `409` error.
+Base attributes include `entity_id`, `version`, `changed_by_id` and `changed_on`.
+
+The ideal way to update is to GET a production record, modify the key-value pairs in that JSON data and
+pass it as body in a request to this endpoint
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 60701b3a-6aca-40cf-95ae-03eab68c23e0
+
+    + Body
+
+            {
+                "supplier_id": "60701b3a-6aca-40cf-95ae-03eab68c23e0",
+                "products": [
+                    {
+                        "quantity": 6,
+                        "product_id": "3a29b58a-015f-4023-b048-21e24a33dba3"
+                    },
+                    {
+                        "quantity": 20,
+                        "product_id": "e89f4005-1bd3-4527-8322-4b1184a46576"
+                    }
+                ],
+                "production_date": "2019-06-22",
+                "notes": "production notes",
+                "user_id": "5d26bc028fc6c70caaa8fa7d",
+                "entity_id": "9b19b67d-6270-4d41-8c51-f9e2e001f010",
+                "version": "68bd0c2e-363c-49d2-b970-12d16b6c5bed",
+                "changed_on": "2019-07-27T14:22:01Z"
+            }
+
++ Response 200 (application/json)
+
+        {
+            "supplier_id": "60701b3a-6aca-40cf-95ae-03eab68c23e0",
+            "products": [
+                {
+                    "quantity": 6,
+                    "product_id": "3a29b58a-015f-4023-b048-21e24a33dba3"
+                },
+                {
+                    "quantity": 20,
+                    "product_id": "e89f4005-1bd3-4527-8322-4b1184a46576"
+                }
+            ],
+            "production_date": "2019-06-22",
+            "notes": "production notes",
+            "user_id": "5d26bc028fc6c70caaa8fa7d",
+            "entity_id": "9b19b67d-6270-4d41-8c51-f9e2e001f010",
+            "version": "68bd0c2e-363c-49d2-b970-12d16b6c5bed",
+            "changed_on": "2019-07-27T14:22:01Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 409 (application/json)
+
+        {
+            "error": "The request could not be completed due to a conflict with the current state of the resource"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+## Production - in date range [/production/between/{min_production_date}/{max_production_date}]
+
+### Get [GET]
+
+Get a list of production entries filtered by `production_date` date range. The filtered list is inclusive of the `min` and `max` production date.
+
++ Parameters
+    + `min_production_date` (date) - `2017-12-01` Date from which to retrieve production (01, December, 2017)
+    + `max_production_date` (optional, date) - `2018-03-15` Date up to which to retrieve production (15, March, 2018). If optionally left out, today's date is used instead.
+
++ Request
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 60701b3a-6aca-40cf-95ae-03eab68c23e0
+
++ Response 200 (application/json)
+
+            [
+                {
+                    "supplier_id": "60701b3a-6aca-40cf-95ae-03eab68c23e0",
+                    "products": [
+                        {
+                            "quantity": 6,
+                            "product_id": "3a29b58a-015f-4023-b048-21e24a33dba3"
+                        }
+                    ],
+                    "production_date": "2019-06-21",
+                    "notes": "production notes",
+                    "user_id": "5d26bc028fc6c70caaa8fa7d",
+                    "entity_id": "9b19b67d-6270-4d41-8c51-f9e2e001f010",
+                    "version": "68bd0c2e-363c-49d2-b970-12d16b6c5bed",
+                    "changed_on": "2019-07-27T14:22:01Z"
+                }
+            ]
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+## Production - production entry by id [/production/{entity_id}]
+
+### Get [GET]
+
+Gets a production entry by its id
+
++ Parameters
+    + `entity_id` (string) - `9b19b67d-6270-4d41-8c51-f9e2e001f010` entity id of the production record
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 60701b3a-6aca-40cf-95ae-03eab68c23e0
+
++ Response 200 (application/json)
+
+        {
+            "supplier_id": "60701b3a-6aca-40cf-95ae-03eab68c23e0",
+            "products": [
+                {
+                    "quantity": 6,
+                    "product_id": "3a29b58a-015f-4023-b048-21e24a33dba3"
+                },
+                {
+                    "quantity": 20,
+                    "product_id": "e89f4005-1bd3-4527-8322-4b1184a46576"
+                }
+            ],
+            "production_date": "2019-06-22",
+            "notes": "production notes",
+            "user_id": "5d26bc028fc6c70caaa8fa7d",
+            "entity_id": "9b19b67d-6270-4d41-8c51-f9e2e001f010",
+            "version": "68bd0c2e-363c-49d2-b970-12d16b6c5bed",
+            "changed_on": "2019-07-27T14:22:01Z"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+### Delete [DELETE]
+
+Deletes a production entry by its id
+
++ Parameters
+    + `entity_id` (string) - `9b19b67d-6270-4d41-8c51-f9e2e001f010` entity id of the production record
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 60701b3a-6aca-40cf-95ae-03eab68c23e0
+
++ Response 204
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+## Products [/products]
+
+This resource contains information on products.
+
+### Get all [GET]
+
+Get all products
+
++ Request
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
++ Response 200 (application/json)
+
+        [
+            {
+                "package_type_id": "581fa2a2-631d-4ec4-83a7-c905859681ec",
+                "user_id": "5d26bc028fc6c70caaa8fa7d",
+                "brand_id": "60701b3a-6aca-40cf-95ae-03eab68c23e0",
+                "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+                "available_date": "2019-10-21",
+                "container_upc": "978020137962",
+                "retail_package_upc": "941020167969",
+                "package_type_upc": "950120137955",
+                "shelf_life": 4,
+                "order_minimum": 10,
+                "vip_number": "12345"
+                "entity_id": "ad4bc969-c024-4e2d-8ed3-b018095166d7",
+                "version": "7ea8067a-aad7-4dae-bb95-1639bc5f382e",
+                "changed_on": "2019-07-27T14:15:57Z"
+            }
+        ]
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+### Add [POST]
+
+Adds a new product
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
+    + Body
+
+            {
+                "package_type_id": "581fa2a2-631d-4ec4-83a7-c905859681ec",
+                "brand_id": "60701b3a-6aca-40cf-95ae-03eab68c23e0",
+                "available_date": "2019-10-21",
+                "container_upc": "978020137962",
+                "retail_package_upc": "941020167969",
+                "package_type_upc": "950120137955",
+                "shelf_life": 4,
+                "order_minimum": 10,
+                "vip_number": "12345"
+            }
+
++ Response 200 (application/json)
+
+        {
+            "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+            "package_type_id": "581fa2a2-631d-4ec4-83a7-c905859681ec",
+            "brand_id": "60701b3a-6aca-40cf-95ae-03eab68c23e0",
+            "available_date": "2019-10-21",
+            "container_upc": "978020137962",
+            "retail_package_upc": "941020167969",
+            "package_type_upc": "950120137955",
+            "shelf_life": 4,
+            "order_minimum": 10,
+            "vip_number": "12345"
+            "user_id": "5d081df871deea0dd14ce63a",
+            "entity_id": "f0b7bdce-34eb-46ee-b3e0-6a627012a320",
+            "version": "8fbb4ead-4651-4c09-8816-8b1d3269cf9a",
+            "changed_on": "2019-06-26T00:45:22Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 409 (application/json)
+
+        {
+            "error": "The request could not be completed due to a conflict with the current state of the resource"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+### Update [PUT]
+
+Update an existing product
+
+Note: This method does not allow updating base attributes of the resource, this will lead to a `409` error.
+Base attributes include `entity_id`, `version`, `changed_by_id` and `changed_on`.
+
+The ideal way to update is to GET a product, modify the key-value pairs in that JSON data and
+pass it as body in a request to this endpoint
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
+    + Body
+
+            {
+                "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+                "package_type_id": "581fa2a2-631d-4ec4-83a7-c905859681ec",
+                "brand_id": "7b701b3a-6aca-50cf-95ae-03eab68c23e0",
+                "available_date": "2019-10-21",
+                "container_upc": "978020137962",
+                "retail_package_upc": "941020167969",
+                "package_type_upc": "950120137955",
+                "shelf_life": 5,
+                "order_minimum": 15,
+                "vip_number": "12345"
+                "user_id": "5d081df871deea0dd14ce63a",
+                "entity_id": "f0b7bdce-34eb-46ee-b3e0-6a627012a320",
+                "version": "036fe456-8ae7-4a3a-8a61-b3ea4e13999f",
+                "changed_on": "2019-06-21T11:11:36Z"
+            }
+
++ Response 200 (application/json)
+
+        {
+            "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+            "package_type_id": "581fa2a2-631d-4ec4-83a7-c905859681ec",
+            "brand_id": "7b701b3a-6aca-50cf-95ae-03eab68c23e0",
+            "available_date": "2019-10-21",
+            "container_upc": "978020137962",
+            "retail_package_upc": "941020167969",
+            "package_type_upc": "950120137955",
+            "shelf_life": 5,
+            "order_minimum": 15,
+            "vip_number": "12345"
+            "user_id": "5d081df871deea0dd14ce63a",
+            "entity_id": "f0b7bdce-34eb-46ee-b3e0-6a627012a320",
+            "version": "551f37bc-cfc5-4ba3-9b52-a2bf852688dc",
+            "changed_on": "2019-06-26T00:47:44Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 409 (application/json)
+
+        {
+            "error": "The request could not be completed due to a conflict with the current state of the resource"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+## Products - product by id [/products/{entity_id}]
+
+### Get [GET]
+
+Gets a product by its id
+
++ Parameters
+    + `entity_id` (string) - `f0b7bdce-34eb-46ee-b3e0-6a627012a320` entity id of the product
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
++ Response 200 (application/json)
+
+        {
+            "user_id": "5d081df871deea0dd14ce63a",
+            "package_type_id": "581fa2a2-631d-4ec4-83a7-c905859681ec",
+            "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+            "brand_id": "7b701b3a-6aca-50cf-95ae-03eab68c23e0",
+            "available_date": "2019-10-21",
+            "container_upc": "978020137962",
+            "retail_package_upc": "941020167969",
+            "package_type_upc": "950120137955",
+            "shelf_life": 5,
+            "order_minimum": 15,
+            "vip_number": "12345"
+            "entity_id": "f0b7bdce-34eb-46ee-b3e0-6a627012a320",
+            "version": "551f37bc-cfc5-4ba3-9b52-a2bf852688dc",
+            "changed_on": "2019-06-26T00:47:44Z"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+### Delete [DELETE]
+
+Deletes a product by its id
+
++ Parameters
+    + `entity_id` (string) - `f0b7bdce-34eb-46ee-b3e0-6a627012a320` entity id of the product
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
++ Response 204
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+## Profile [/users]
+
+This resource contains user information like Name, Email ID and the marketplaces where the user works.
+
+### Get or Create [GET]
+
+Gets the user profile if exists, else creates a new user profile.
+
+When a new profile is created, the response is simple as the first response below. Upon doing an update, a more detailed response can be gotten as in the second response.
+
++ Response 200 (application/json)
+
+        {
+            "user_id": "5cf84fff8506530c5c820961",
+            "email": "johnsmith@gmail.com"
+            "affiliate_id": "2CVHTX",
+            "entity_id": "5cf84fff8506530c5c820961",
+            "version": "07751555-6182-4aea-8e34-18dd5f5664cc",
+            "changed_on": "2019-06-05T23:41:06Z"
+        }
+
++ Response 200 (application/json)
+
+        {
+            "affiliate_id": "2CVHTX",
+            "email": "johnsmith@gmail.com",
+            "lastname": "User",
+            "user_id": "5cf84fff8506530c5c820961",
+            "firstname": "Test",
+            "entity_id": "5cf84fff8506530c5c820961",
+            "version": "abb0e3a9-206f-477e-b132-efc0f7e8e4e8",
+            "changed_on": "2019-06-05T23:43:53Z"
+        }
+
+### Update [PUT]
+
+Updates the user profile
+
+For example let us update the name.
+
+Note: This method does not allow updating base attributes of the resource, this will lead to a `409` error.
+Base attributes include `entity_id`, `version`, `changed_by_id`, `changed_on`. Also `affiliate_id`, `user_id` cannot be updated.
+
+The marketplace object attribute `last_reviewed` is set server-side and cannot be updated. If `last_reviewed` is passed in request, it will be ignored.
+
+Also you can optionally, in your request, omit key pairs that are not changed with respect to current value.
+
++ Request (application/json)
+
+        {
+            "entity_id": "5cf84fff8506530c5c820961",
+            "version": "abb0e3a9-206f-477e-b132-efc0f7e8e4e8",
+            "user_id": "5cf84fff8506530c5c820961",
+            "changed_on": "2018-08-05T08:40:51.620Z",
+            "firstname": "John",
+            "lastname": "Smith",
+            "email": "johnsmith@gmail.com"
+        }
+
++ Response 200 (application/json)
+
+        {
+            "entity_id": "5cf84fff8506530c5c820961",
+            "version": "b4072e58-a561-46cb-9132-98650d7326d6",
+            "changed_by_id": "5cf84fff8506530c5c820961",
+            "user_id": "5cf84fff8506530c5c820961",
+            "changed_on": "2018-08-05T08:40:51.620Z",
+            "firstname": "John",
+            "lastname": "Smith",
+            "email": "johnsmith@gmail.com",
+            "affiliate_id": "27DX7H"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 409 (application/json)
+
+        {
+            "error": "The request could not be completed due to a conflict with the current state of the resource"
+        }
+
+### Delete profile [DELETE]
+
+To Delete a profile is the same as deleting an user account. User's profile along with their Authentication and authorization permissions are deleted.
+
++ Response 204
+
+## Purchase Orders [/purchase-orders]
+
+This resource contains information on purchase orders
+
+### Add [POST]
+
+Adds a new purchase order
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
+    + Body
+
+            {
+                "distributor_name": "XYZ Inc",
+                "order_date": "2019-08-21",
+                "pack_date": "2019-08-21",
+                "ship_date": "2019-08-22",
+                "products": [
+                    "581fa2a2-631d-4ec4-83a7-c905859681ec",
+                    "3757d621-570e-4d1f-b171-686e40eafc54"
+                ],
+                "order_number": "ABCD-1234",
+                "po_number": "PO1000",
+                "weight": 10.5,
+                "weight_uom": "kg",
+                "distributor_id": "fd131f6a-18ee-4dd1-90df-ad7257b06d89"
+            }
+
+
+
++ Response 200 (application/json)
+
+        {
+            "distributor_name": "XYZ Inc",
+            "order_date": "2019-08-21",
+            "pack_date": "2019-08-21",
+            "ship_date": "2019-08-22",
+            "products": [
+                "581fa2a2-631d-4ec4-83a7-c905859681ec",
+                "3757d621-570e-4d1f-b171-686e40eafc54"
+            ],
+            "order_number": "ABCD-1234",
+            "po_number": "PO1000",
+            "weight": 10.5,
+            "weight_uom": "kg",
+            "distributor_id": "fd131f6a-18ee-4dd1-90df-ad7257b06d89"
+            "user_id": "5d26bc028fc6c70caaa8fa7d",
+            "entity_id": "f14d9f6e-6579-44eb-b635-0bc46704a796",
+            "version": "9b2924f8-7173-47cf-bc55-f2de1fe8804c",
+            "changed_on": "2019-07-29T19:58:56Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-distributor-id: fd131f6a-18ee-4dd1-90df-ad7257b06d89
+
+    + Body
+
+            {
+                "distributor_name": "XYZ Inc",
+                "order_date": "2019-08-21",
+                "pack_date": "2019-08-21",
+                "ship_date": "2019-08-22",
+                "products": [
+                    "581fa2a2-631d-4ec4-83a7-c905859681ec",
+                    "3757d621-570e-4d1f-b171-686e40eafc54"
+                ],
+                "order_number": "ABCD-1234",
+                "po_number": "PO1000",
+                "weight": 10.5,
+                "weight_uom": "kg",
+                "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745"
+            }
+
+
+
++ Response 200 (application/json)
+
+        {
+            "distributor_name": "XYZ Inc",
+            "order_date": "2019-08-21",
+            "pack_date": "2019-08-21",
+            "ship_date": "2019-08-22",
+            "products": [
+                "581fa2a2-631d-4ec4-83a7-c905859681ec",
+                "3757d621-570e-4d1f-b171-686e40eafc54"
+            ],
+            "order_number": "ABCD-1234",
+            "po_number": "PO1000",
+            "weight": 10.5,
+            "weight_uom": "kg",
+            "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+            "user_id": "5d26bc028fc6c70caaa8fa7d",
+            "entity_id": "f14d9f6e-6579-44eb-b635-0bc46704a796",
+            "version": "9b2924f8-7173-47cf-bc55-f2de1fe8804c",
+            "changed_on": "2019-07-29T19:58:56Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. distributor_id is not associated with the user"
+        }
+
+### Update [PUT]
+
+Update an existing purchase order
+
+Note: This method does not allow updating base attributes of the resource, this will lead to a `409` error.
+Base attributes include `entity_id`, `version`, `changed_by_id` and `changed_on`.
+
+The ideal way to update is to GET a purchase order, modify the key-value pairs in that JSON data and
+pass it as body in a request to this endpoint
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
+    + Body
+
+            {
+                "distributor_name": "XYZ Inc",
+                "order_date": "2019-08-21",
+                "pack_date": "2019-08-21",
+                "ship_date": "2019-08-23",
+                "products": [
+                    "581fa2a2-631d-4ec4-83a7-c905859681ec",
+                    "3757d621-570e-4d1f-b171-686e40eafc54",
+                    "27a39d35-1d6c-46c0-83e4-1374c7b0978a"
+                ],
+                "order_number": "ABCD-1234",
+                "po_number": "PO1000",
+                "weight": 10.5,
+                "weight_uom": "kg",
+                "distributor_id": "fd131f6a-18ee-4dd1-90df-ad7257b06d8"
+                "user_id": "5d26bc028fc6c70caaa8fa7d",
+                "entity_id": "f14d9f6e-6579-44eb-b635-0bc46704a796",
+                "version": "9b2924f8-7173-47cf-bc55-f2de1fe8804c",
+                "changed_on": "2019-07-29T19:58:56Z"
+            }
+
++ Response 200 (application/json)
+
+        {
+            "distributor_name": "XYZ Inc",
+            "order_date": "2019-08-21",
+            "pack_date": "2019-08-21",
+            "ship_date": "2019-08-23",
+            "products": [
+                "581fa2a2-631d-4ec4-83a7-c905859681ec",
+                "3757d621-570e-4d1f-b171-686e40eafc54",
+                "27a39d35-1d6c-46c0-83e4-1374c7b0978a"
+            ],
+            "order_number": "ABCD-1234",
+            "po_number": "PO1000",
+            "weight": 10.5,
+            "weight_uom": "kg",
+            "distributor_id": "fd131f6a-18ee-4dd1-90df-ad7257b06d8"
+            "user_id": "5d26bc028fc6c70caaa8fa7d",
+            "entity_id": "f14d9f6e-6579-44eb-b635-0bc46704a796",
+            "version": "43a7bb32-c30e-46bc-a16a-33b84193f814",
+            "changed_on": "2019-07-29T19:58:56Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 409 (application/json)
+
+        {
+            "error": "The request could not be completed due to a conflict with the current state of the resource"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-distributor-id: fd131f6a-18ee-4dd1-90df-ad7257b06d8
+
+    + Body
+
+            {
+                "distributor_name": "XYZ Inc",
+                "order_date": "2019-08-21",
+                "pack_date": "2019-08-21",
+                "ship_date": "2019-08-23",
+                "products": [
+                    "581fa2a2-631d-4ec4-83a7-c905859681ec",
+                    "3757d621-570e-4d1f-b171-686e40eafc54",
+                    "27a39d35-1d6c-46c0-83e4-1374c7b0978a"
+                ],
+                "order_number": "ABCD-1234",
+                "po_number": "PO1000",
+                "weight": 10.5,
+                "weight_uom": "kg",
+                "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+                "user_id": "5d26bc028fc6c70caaa8fa7d",
+                "entity_id": "f14d9f6e-6579-44eb-b635-0bc46704a796",
+                "version": "9b2924f8-7173-47cf-bc55-f2de1fe8804c",
+                "changed_on": "2019-07-29T19:58:56Z"
+            }
+
++ Response 200 (application/json)
+
+        {
+            "distributor_name": "XYZ Inc",
+            "order_date": "2019-08-21",
+            "pack_date": "2019-08-21",
+            "ship_date": "2019-08-23",
+            "products": [
+                "581fa2a2-631d-4ec4-83a7-c905859681ec",
+                "3757d621-570e-4d1f-b171-686e40eafc54",
+                "27a39d35-1d6c-46c0-83e4-1374c7b0978a"
+            ],
+            "order_number": "ABCD-1234",
+            "po_number": "PO1000",
+            "weight": 10.5,
+            "weight_uom": "kg",
+            "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+            "user_id": "5d26bc028fc6c70caaa8fa7d",
+            "entity_id": "f14d9f6e-6579-44eb-b635-0bc46704a796",
+            "version": "43a7bb32-c30e-46bc-a16a-33b84193f814",
+            "changed_on": "2019-07-29T19:58:56Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 409 (application/json)
+
+        {
+            "error": "The request could not be completed due to a conflict with the current state of the resource"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. distributor_id is not associated with the user"
+        }
+
+## Purchase orders - by order date range [/purchase-orders/ordered-between/{min_order_date}/{max_order_date}]
+
+### Get [GET]
+
+Get a list of counts filtered by `order_date` date range. The filtered list is inclusive of the `min` and `max` count date.
+
++ Parameters
+    + `min_order_date` (date) - `2017-12-01` Date from which to retrieve purchase orders (01, December, 2017)
+    + `max_order_date` (optional, date) - `2018-03-15` Date up to which to retrieve purchase orders (15, March, 2018). If optionally left out, today's date is used instead.
+
++ Request
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 60701b3a-6aca-40cf-95ae-03eab68c23e0
+
++ Response 200 (application/json)
+
+            [
+                {
+                    "distributor_name": "XYZ Inc",
+                    "order_date": "2019-08-21",
+                    "pack_date": "2019-08-21",
+                    "ship_date": "2019-08-23",
+                    "products": [
+                        "581fa2a2-631d-4ec4-83a7-c905859681ec",
+                        "3757d621-570e-4d1f-b171-686e40eafc54",
+                        "27a39d35-1d6c-46c0-83e4-1374c7b0978a"
+                    ],
+                    "order_number": "ABCD-1234",
+                    "po_number": "PO1000",
+                    "weight": 10.5,
+                    "weight_uom": "kg",
+                    "distributor_id": "fd131f6a-18ee-4dd1-90df-ad7257b06d8"
+                    "user_id": "5d26bc028fc6c70caaa8fa7d",
+                    "entity_id": "f14d9f6e-6579-44eb-b635-0bc46704a796",
+                    "version": "43a7bb32-c30e-46bc-a16a-33b84193f814",
+                    "changed_on": "2019-07-29T19:58:56Z"
+                }
+            ]
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
++ Request
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-distributor-id: fd131f6a-18ee-4dd1-90df-ad7257b06d8
+
++ Response 200 (application/json)
+
+            [
+                {
+                    "distributor_name": "XYZ Inc",
+                    "order_date": "2019-08-21",
+                    "pack_date": "2019-08-21",
+                    "ship_date": "2019-08-23",
+                    "products": [
+                        "581fa2a2-631d-4ec4-83a7-c905859681ec",
+                        "3757d621-570e-4d1f-b171-686e40eafc54",
+                        "27a39d35-1d6c-46c0-83e4-1374c7b0978a"
+                    ],
+                    "order_number": "ABCD-1234",
+                    "po_number": "PO1000",
+                    "weight": 10.5,
+                    "weight_uom": "kg",
+                    "supplier_id": "60701b3a-6aca-40cf-95ae-03eab68c23e0",
+                    "user_id": "5d26bc028fc6c70caaa8fa7d",
+                    "entity_id": "f14d9f6e-6579-44eb-b635-0bc46704a796",
+                    "version": "43a7bb32-c30e-46bc-a16a-33b84193f814",
+                    "changed_on": "2019-07-29T19:58:56Z"
+                }
+            ]
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. distributor_id is not associated with the user"
+        }
+
+## Purchase orders - by pack date range [/purchase-orders/packed-between/{min_pack_date}/{max_pack_date}]
+
+### Get [GET]
+
+Get a list of counts filtered by `pack_date` date range. The filtered list is inclusive of the `min` and `max` count date.
+
++ Parameters
+    + `min_pack_date` (date) - `2017-12-01` Date from which to retrieve purchase orders (01, December, 2017)
+    + `max_pack_date` (optional, date) - `2018-03-15` Date up to which to retrieve purchase orders (15, March, 2018). If optionally left out, today's date is used instead.
+
++ Request
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 60701b3a-6aca-40cf-95ae-03eab68c23e0
+
++ Response 200 (application/json)
+
+            [
+                {
+                    "distributor_name": "XYZ Inc",
+                    "order_date": "2019-08-21",
+                    "pack_date": "2019-08-21",
+                    "ship_date": "2019-08-23",
+                    "products": [
+                        "581fa2a2-631d-4ec4-83a7-c905859681ec",
+                        "3757d621-570e-4d1f-b171-686e40eafc54",
+                        "27a39d35-1d6c-46c0-83e4-1374c7b0978a"
+                    ],
+                    "order_number": "ABCD-1234",
+                    "po_number": "PO1000",
+                    "weight": 10.5,
+                    "weight_uom": "kg",
+                    "distributor_id": "fd131f6a-18ee-4dd1-90df-ad7257b06d8"
+                    "user_id": "5d26bc028fc6c70caaa8fa7d",
+                    "entity_id": "f14d9f6e-6579-44eb-b635-0bc46704a796",
+                    "version": "43a7bb32-c30e-46bc-a16a-33b84193f814",
+                    "changed_on": "2019-07-29T19:58:56Z"
+                }
+            ]
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
++ Request
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-distributor-id: fd131f6a-18ee-4dd1-90df-ad7257b06d8
+
++ Response 200 (application/json)
+
+            [
+                {
+                    "distributor_name": "XYZ Inc",
+                    "order_date": "2019-08-21",
+                    "pack_date": "2019-08-21",
+                    "ship_date": "2019-08-23",
+                    "products": [
+                        "581fa2a2-631d-4ec4-83a7-c905859681ec",
+                        "3757d621-570e-4d1f-b171-686e40eafc54",
+                        "27a39d35-1d6c-46c0-83e4-1374c7b0978a"
+                    ],
+                    "order_number": "ABCD-1234",
+                    "po_number": "PO1000",
+                    "weight": 10.5,
+                    "weight_uom": "kg",
+                    "supplier_id": "60701b3a-6aca-40cf-95ae-03eab68c23e0",
+                    "user_id": "5d26bc028fc6c70caaa8fa7d",
+                    "entity_id": "f14d9f6e-6579-44eb-b635-0bc46704a796",
+                    "version": "43a7bb32-c30e-46bc-a16a-33b84193f814",
+                    "changed_on": "2019-07-29T19:58:56Z"
+                }
+            ]
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. distributor_id is not associated with the user"
+        }
+## Purchase orders - by ship date range [/purchase-orders/shipped-between/{min_ship_date}/{max_ship_date}]
+
+### Get [GET]
+
+Get a list of counts filtered by `ship_date` date range. The filtered list is inclusive of the `min` and `max` count date.
+
++ Parameters
+    + `min_ship_date` (date) - `2017-12-01` Date from which to retrieve purchase orders (01, December, 2017)
+    + `max_ship_date` (optional, date) - `2018-03-15` Date up to which to retrieve purchase orders (15, March, 2018). If optionally left out, today's date is used instead.
+
++ Request
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 60701b3a-6aca-40cf-95ae-03eab68c23e0
+
++ Response 200 (application/json)
+
+            [
+                {
+                    "distributor_name": "XYZ Inc",
+                    "order_date": "2019-08-21",
+                    "pack_date": "2019-08-21",
+                    "ship_date": "2019-08-23",
+                    "products": [
+                        "581fa2a2-631d-4ec4-83a7-c905859681ec",
+                        "3757d621-570e-4d1f-b171-686e40eafc54",
+                        "27a39d35-1d6c-46c0-83e4-1374c7b0978a"
+                    ],
+                    "order_number": "ABCD-1234",
+                    "po_number": "PO1000",
+                    "weight": 10.5,
+                    "weight_uom": "kg",
+                    "distributor_id": "fd131f6a-18ee-4dd1-90df-ad7257b06d8"
+                    "user_id": "5d26bc028fc6c70caaa8fa7d",
+                    "entity_id": "f14d9f6e-6579-44eb-b635-0bc46704a796",
+                    "version": "43a7bb32-c30e-46bc-a16a-33b84193f814",
+                    "changed_on": "2019-07-29T19:58:56Z"
+                }
+            ]
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
++ Request
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-distributor-id: fd131f6a-18ee-4dd1-90df-ad7257b06d8
+
++ Response 200 (application/json)
+
+            [
+                {
+                    "distributor_name": "XYZ Inc",
+                    "order_date": "2019-08-21",
+                    "pack_date": "2019-08-21",
+                    "ship_date": "2019-08-23",
+                    "products": [
+                        "581fa2a2-631d-4ec4-83a7-c905859681ec",
+                        "3757d621-570e-4d1f-b171-686e40eafc54",
+                        "27a39d35-1d6c-46c0-83e4-1374c7b0978a"
+                    ],
+                    "order_number": "ABCD-1234",
+                    "po_number": "PO1000",
+                    "weight": 10.5,
+                    "weight_uom": "kg",
+                    "distributor_id": "60701b3a-6aca-40cf-95ae-03eab68c23e0",
+                    "user_id": "5d26bc028fc6c70caaa8fa7d",
+                    "entity_id": "f14d9f6e-6579-44eb-b635-0bc46704a796",
+                    "version": "43a7bb32-c30e-46bc-a16a-33b84193f814",
+                    "changed_on": "2019-07-29T19:58:56Z"
+                }
+            ]
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. distributor_id is not associated with the user"
+        }
+
+## Purchase Order - by id [/purchase-orders/{entity_id}]
+
+### Get [GET]
+
+Gets a purchase order by its id
+
++ Parameters
+    + `entity_id` (string) - `f14d9f6e-6579-44eb-b635-0bc46704a796` entity id of the purchase order
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
++ Response 200 (application/json)
+
+        {
+            "distributor_name": "XYZ Inc",
+            "order_date": "2019-08-21",
+            "pack_date": "2019-08-21",
+            "ship_date": "2019-08-23",
+            "products": [
+                "581fa2a2-631d-4ec4-83a7-c905859681ec",
+                "3757d621-570e-4d1f-b171-686e40eafc54",
+                "27a39d35-1d6c-46c0-83e4-1374c7b0978a"
+            ],
+            "order_number": "ABCD-1234",
+            "po_number": "PO1000",
+            "weight": 10.5,
+            "weight_uom": "kg",
+            "distributor_id": "fd131f6a-18ee-4dd1-90df-ad7257b06d8"
+            "user_id": "5d26bc028fc6c70caaa8fa7d",
+            "entity_id": "f14d9f6e-6579-44eb-b635-0bc46704a796",
+            "version": "43a7bb32-c30e-46bc-a16a-33b84193f814",
+            "changed_on": "2019-07-29T19:58:56Z"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-distributor-id: fd131f6a-18ee-4dd1-90df-ad7257b06d8
+
++ Response 200 (application/json)
+
+        {
+            "distributor_name": "XYZ Inc",
+            "order_date": "2019-08-21",
+            "pack_date": "2019-08-21",
+            "ship_date": "2019-08-23",
+            "products": [
+                "581fa2a2-631d-4ec4-83a7-c905859681ec",
+                "3757d621-570e-4d1f-b171-686e40eafc54",
+                "27a39d35-1d6c-46c0-83e4-1374c7b0978a"
+            ],
+            "order_number": "ABCD-1234",
+            "po_number": "PO1000",
+            "weight": 10.5,
+            "weight_uom": "kg",
+            "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+            "user_id": "5d26bc028fc6c70caaa8fa7d",
+            "entity_id": "f14d9f6e-6579-44eb-b635-0bc46704a796",
+            "version": "43a7bb32-c30e-46bc-a16a-33b84193f814",
+            "changed_on": "2019-07-29T19:58:56Z"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. distributor_id is not associated with the user"
+        }
+
+### Delete [DELETE]
+
+Deletes a purchase order by its id
+
++ Parameters
+    + `entity_id` (string) - `f14d9f6e-6579-44eb-b635-0bc46704a796` entity id of the purchase order
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
++ Response 204
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-distributor-id: fd131f6a-18ee-4dd1-90df-ad7257b06d8
+
++ Response 204
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. distributor_id is not associated with the user"
+        }
+
+## Retail Packages [/retail-packages]
+
+This resource contains information on retail packages.
+
+### Get all [GET]
+
+Get all retail packages
+
++ Request
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 60701b3a-6aca-40cf-95ae-03eab68c23e0
+
++ Response 200 (application/json)
+
+            [
+                {
+                    "quantity": 6,
+                    "container_id": "f0b7bdce-34eb-46ee-b3e0-6a627012a320",
+                    "user_id": "5d26bc028fc6c70caaa8fa7d",
+                    "supplier_id": "60701b3a-6aca-40cf-95ae-03eab68c23e0",
+                    "name": "six pack",
+                    "entity_id": "9b19b67d-6270-4d41-8c51-f9e2e001f010",
+                    "version": "68bd0c2e-363c-49d2-b970-12d16b6c5bed",
+                    "changed_on": "2019-07-27T14:22:01Z"
+                }
+            ]
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+### Add [POST]
+
+Adds a new retail package
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 60701b3a-6aca-40cf-95ae-03eab68c23e0
+
+    + Body
+
+            {
+                "name": "six pack",
+                "quantity": 6,
+                "container_id": "f0b7bdce-34eb-46ee-b3e0-6a627012a320"
+            }
+
++ Response 200 (application/json)
+
+        {
+            "name": "six pack",
+            "quantity": 6,
+            "container_id": "f0b7bdce-34eb-46ee-b3e0-6a627012a320",
+            "supplier_id": "60701b3a-6aca-40cf-95ae-03eab68c23e0"
+            "user_id": "5d081df871deea0dd14ce63a",
+            "entity_id": "da080d19-295b-48b5-9f9c-4f5a0e1a7d13",
+            "version": "46b82aa6-08cf-4366-bd24-42880bf4ca31",
+            "changed_on": "2019-06-21T11:11:36Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 409 (application/json)
+
+        {
+            "error": "The request could not be completed due to a conflict with the current state of the resource"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+### Update [PUT]
+
+Update an existing retail package
+
+Note: This method does not allow updating base attributes of the resource, this will lead to a `409` error.
+Base attributes include `entity_id`, `version`, `changed_by_id` and `changed_on`.
+
+The ideal way to update is to GET a retail package, modify the key-value pairs in that JSON data and
+pass it as body in a request to this endpoint
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 60701b3a-6aca-40cf-95ae-03eab68c23e0
+
+    + Body
+
+            {
+                "name": "eight pack",
+                "quantity": 8,
+                "container_id": "f0b7bdce-34eb-46ee-b3e0-6a627012a320",
+                "supplier_id": "60701b3a-6aca-40cf-95ae-03eab68c23e0"
+                "user_id": "5d081df871deea0dd14ce63a",
+                "entity_id": "da080d19-295b-48b5-9f9c-4f5a0e1a7d13",
+                "version": "46b82aa6-08cf-4366-bd24-42880bf4ca31",
+                "changed_on": "2019-06-21T11:11:36Z"
+            }
+
++ Response 200 (application/json)
+
+        {
+            "name": "eight pack",
+            "quantity": 8,
+            "container_id": "f0b7bdce-34eb-46ee-b3e0-6a627012a320",
+            "supplier_id": "60701b3a-6aca-40cf-95ae-03eab68c23e0"
+            "user_id": "5d081df871deea0dd14ce63a",
+            "entity_id": "da080d19-295b-48b5-9f9c-4f5a0e1a7d13",
+            "version": "971dcfc3-a120-4f57-8b99-b94506f861bd",
+            "changed_on": "2019-06-22T12:12:26Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 409 (application/json)
+
+        {
+            "error": "The request could not be completed due to a conflict with the current state of the resource"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+## Retail Packages - retail package by id [/retail-packages/{entity_id}]
+
+### Get [GET]
+
+Gets a retail package by its id
+
++ Parameters
+    + `entity_id` (string) - `f0b7bdce-34eb-46ee-b3e0-6a627012a320` entity id of the retail package
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 60701b3a-6aca-40cf-95ae-03eab68c23e0
+
++ Response 200 (application/json)
+
+        {
+            "name": "eight pack",
+            "quantity": 8,
+            "container_id": "f0b7bdce-34eb-46ee-b3e0-6a627012a320",
+            "supplier_id": "60701b3a-6aca-40cf-95ae-03eab68c23e0"
+            "user_id": "5d081df871deea0dd14ce63a",
+            "entity_id": "da080d19-295b-48b5-9f9c-4f5a0e1a7d13",
+            "version": "971dcfc3-a120-4f57-8b99-b94506f861bd",
+            "changed_on": "2019-06-22T12:12:26Z"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+### Delete [DELETE]
+
+Deletes a retail package by its id
+
++ Parameters
+    + `entity_id` (string) - `f0b7bdce-34eb-46ee-b3e0-6a627012a320` entity id of the retail package
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 60701b3a-6aca-40cf-95ae-03eab68c23e0
+
++ Response 204
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+## Sign Up [/signup]
+
+This is a public endpoint that is used to signup new users to BrewOptixV2.
+
+### Add [POST]
+
+Adds a new user
+
++ Request (application/json)
+
+    + Headers
+
+            Origin: https://production-url.domain
+
+    + Body
+
+            {
+                "email": "johnsmith@example.com",
+                "password": "SuperSecret123!"
+            }
+
++ Response 200 (application/json)
+
+        {
+            "user_id": "5d26d828fe86a90c7c8c0a64",
+            "email": "johnsmith@example.com",
+            "affiliate_id": "E71KT9",
+            "name": "johnsmith@example.com",
+            "picture": "https://s.gravatar.com/avatar/1fe470d5360efebdc59c969dadd290ea?s=480&r=pg&d=https%3A%2F%2Fcdn.auth0.com%2Favatars%2Fsz.png",
+            "nickname": "johnsmith",
+            "email_verified": false,
+            "blocked": false,
+            "entity_id": "5d26d828fe86a90c7c8c0a64",
+            "version": "daa7988f-36b4-4b9a-82e7-24d36bb401bf",
+            "changed_on": "2019-07-11T06:33:14Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 409 (application/json)
+
+        {
+            "error": "user already exists"
+        }
+
++ Response 500 (application/json)
+
+        {
+            "error": "Unknown error happened"
+        }
+
++ Request to add a supplier (application/json)
+
+    + Headers
+
+            Origin: https://production-url.domain
+
+    + Body
+
+            {
+                "email": "johnsmith@example.com",
+                "password": "SuperSecret123!",
+                "name": "John Smith",
+                "company_name": "Brewberry",
+                "website": "www.brewberry.com"
+            }
+
++ Response 200 (application/json)
+
+        {
+            "user_id": "5d26d828fe86a90c7c8c0a64",
+            "email": "johnsmith@example.com",
+            "affiliate_id": "E71KT9",
+            "name": "johnsmith@example.com",
+            "picture": "https://s.gravatar.com/avatar/1fe470d5360efebdc59c969dadd290ea?s=480&r=pg&d=https%3A%2F%2Fcdn.auth0.com%2Favatars%2Fsz.png",
+            "nickname": "johnsmith",
+            "email_verified": false,
+            "blocked": false,
+            "entity_id": "5d26d828fe86a90c7c8c0a64",
+            "version": "daa7988f-36b4-4b9a-82e7-24d36bb401bf",
+            "changed_on": "2019-07-11T06:33:14Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "User created. Auth0 error: {ERROR}"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "User created. But app_metadata update failed, Unable to access Auth0"
+        }
+
+
++ Response 409 (application/json)
+
+        {
+            "error": "user already exists"
+        }
+
++ Response 500 (application/json)
+
+        {
+            "error": "Unknown error happened"
+        }
+
++ Request to add a distirbutor (application/json)
+
+    + Headers
+
+            Origin: https://production-url.domain
+
+    + Body
+
+            {
+                "email": "johnsmith@example.com",
+                "password": "SuperSecret123!",
+                "name": "John Smith",
+                "company_name": "Brewberry",
+                "website": "www.brewberry.com",
+                "is_distributor": true
+            }
+
++ Response 200 (application/json)
+
+        {
+            "user_id": "5d84973d1c2aa80dcd4198b9",
+            "email": "johnsmith@example.com",
+            "affiliate_id": "CSB5FZ",
+            "name": "John Smith",
+            "picture": "https://s.gravatar.com/avatar/e5c71eb4e6d6a231058049ab6ff8d9dd?s=480&r=pg&d=https%3A%2F%2Fcdn.auth0.com%2Favatars%2Fir.png",
+            "nickname": "johnsmith",
+            "email_verified": true,
+            "blocked": false,
+            "entity_id": "5d84973d1c2aa80dcd4198b9",
+            "version": "4474eaa3-e5a7-4bb8-a062-767ef490c763",
+            "changed_on": "2019-09-20T09:09:17Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "User created. Auth0 error: {ERROR}"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "User created. But app_metadata update failed, Unable to access Auth0"
+        }
+
+
++ Response 409 (application/json)
+
+        {
+            "error": "user already exists"
+        }
+
++ Response 500 (application/json)
+
+        {
+            "error": "Unknown error happened"
+        }
+
+## Stripe Payment [/payment/stripe]
+
+Initiate a payment or get payment status for stripe based payments.
+
+### Pay [POST]
+
+Initiate a customer payment and Create user account.
+
+`amount` should be an integer in the lowest unit of the currency (for usd, in cents)
+`source` source token generated by stripe.js
+
++ Request (application/json)
+
+        {
+            "amount": "2100",
+            "currency": "usd",
+            "source": "tok_1DPLtu2eZvKYlo2Cr614QZH9",
+            "plan_level": "Plan",
+            "affiliate_id": "2DS8RT",
+            "email": "johnsmith@gmail.com"
+        }
+
++ Response 200 (application/json)
+
+        {
+            "status": "completed",
+            "charge_id": "ch_1DQ9eK2eZvKYlo2C4wGnXUBX"
+        }
+
++ Response 500 (application/json)
+
+        {
+            "error": "error message received from stripe"
+        }
+
+### Get Payments [GET]
+
+Gets list of all the user transactions (NOT IMPLEMENTED)
+
++ Response 200 (application/json)
+
+        [
+            {
+                "user_id": "11134d33-a025-4d50-88a3-c629428ab542",
+                "entity_id": "27731104-d836-4a59-a932-0c9ef0ac909f",
+                "version": "af37f829-0066-4496-978e-99e57158e495",
+                "changed_by_id": "d9fc024e-d4d5-462b-b326-3f05e32c82a0",
+                "changed_on": "2018-10-09T21:59:14.335461Z",
+                "provider": "stripe",
+                "status": "succeeded",
+                "timestamp": "2018-10-09T21:59:14.335461Z",
+                "amount": 25.0,
+                "currency": "usd",
+                "description": "Prolance Subscription"
+            },
+            {
+                "user_id": "11134d33-a025-4d50-88a3-c629428ab542",
+                "entity_id": "9bd5ac36-37cd-4e17-b598-d4ceb0c51e5d",
+                "version": "fc67d160-fba5-44c1-bf8e-22f9673e9c17",
+                "changed_by_id": "d9fc024e-d4d5-462b-b326-3f05e32c82a0",
+                "changed_on": "2018-09-09T11:59:14.335461Z",
+                "provider": "stripe",
+                "status": "failed",
+                "timestamp": "2018-09-09T11:59:14.335461Z",
+                "amount": 25.0,
+                "currency": "usd",
+                "description": "Prolance Subscription"
+            }
+        ]
+
+## Suppliers [/suppliers]
+
+This resource contains information on user's suppliers.
+
+### Get all [GET]
+
+Get all suppliers
+
++ Request
+    + Headers
+
+            Authorization: Bearer ABCDEF
+
++ Response 200 (application/json)
+
+        [
+            {
+                "website": "www.spirits.com",
+                "zip": "600001",
+                "name": "United Spirits",
+                "state": "karnataka",
+                "city": "banglore",
+                "main_contact_id": "ad51d5ac-17bb-4240-8648-c483b224b2aa",
+                "user_id": "5d081df871deea0dd14ce63a",
+                "street1": "MG Road",
+                "street2": "india",
+                "has_logo": true,
+                "users": [],
+                "phone": "1234567890",
+                "entity_id": "5c516c03-2bb8-434b-9041-171eda2c5196",
+                "version": "5c460f80-bc34-4931-9378-668e78757a22",
+                "changed_on": "2019-06-20T03:04:06Z"
+            }
+        ]
+
+### Add [POST]
+
+Adds a new supplier
+
+Please note, the property "main_contact_id" is automatically set to the user's user_id. If you would
+like to set a different "main_contact_id", you can use the Update endpoint.
+
+"users" list property cannot be updated through this endpoint. Its set automatically.
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer ABCDEF
+
+    + Body
+
+            {
+                "name": "United Spirits",
+                "street1": "MG Road",
+                "street2": "india",
+                "city": "banglore",
+                "state": "karnataka",
+                "zip": "600001",
+                "phone": "1234567890",
+                "website": "www.spirits.com",
+                "has_logo": true,
+                "logo": "iVBORw0KGgoAAAANSUhEUgAACfkAAAMiCAYAAADXE1tkAAftqElEQVR42uz9abAk2Xn=="
+            }
+
++ Response 200 (application/json)
+
+        {
+            "name": "United Spirits",
+            "street1": "MG Road",
+            "street2": "india",
+            "city": "banglore",
+            "state": "karnataka",
+            "zip": "600001",
+            "phone": "1234567890",
+            "website": "www.spirits.com",
+            "has_logo": true,
+            "main_contact_id": "5d081df871deea0dd14ce63a",
+            "users": [
+                {
+                    "user_id": "5d081df871deea0dd14ce63a",
+                    "user_name": "Adam",
+                    "role": "admin"
+                }
+            ],
+            "user_id": "5d081df871deea0dd14ce63a",
+            "entity_id": "53142b41-0963-4463-b793-68796f5bc130",
+            "version": "2e9498f5-a1a3-478a-a55e-c250c4bce318",
+            "changed_on": "2019-06-20T02:55:04Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 409 (application/json)
+
+        {
+            "error": "The request could not be completed due to a conflict with the current state of the resource"
+        }
++ Response 415 (application/json)
+
+        {
+            "error": "Unsupported media type. Error with logo PNG. Unable to decode base64-PNG"
+        }
+
+### Update [PUT]
+
+Update an existing supplier
+
+"users" list property cannot be updated through this endpoint. Its set automatically.
+
+The ideal way to update is to GET a supplier, modify the key-value pairs in that JSON data and
+pass it as body in a request to this endpoint
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 53142b41-0963-4463-b793-68796f5bc130
+
+    + Body
+
+            {
+                "name": "United Spirits",
+                "street1": "MG Road",
+                "street2": "india",
+                "city": "banglore",
+                "state": "karnataka",
+                "zip": "600021",
+                "phone": "9876543210",
+                "website": "www.spirits.com",
+                "has_logo": true,
+                "logo": "iVBORw0KGgoAAAANSUhEUgAACfkAAAMiCAYAAADXE1tkAAftqElEQVR42uz9abAk2Xn==",
+                "main_contact_id": "ad51d5ac-17bb-4240-8648-c483b224b2aa",
+                "users": [
+                    {
+                        "user_id": "5d081df871deea0dd14ce63a",
+                        "user_name": "Adam",
+                        "role": "admin"
+                    }
+                ],
+                "user_id": "5d081df871deea0dd14ce63a",
+                "entity_id": "53142b41-0963-4463-b793-68796f5bc130",
+                "version": "2e9498f5-a1a3-478a-a55e-c250c4bce318",
+                "changed_on": "2019-06-20T02:55:04Z"
+            }
+
++ Response 200 (application/json)
+
+        {
+            "name": "United Spirits",
+            "street1": "MG Road",
+            "street2": "india",
+            "city": "banglore",
+            "state": "karnataka",
+            "zip": "600021",
+            "phone": "9876543210",
+            "website": "www.spirits.com",
+            "has_logo": true,
+            "main_contact_id": "ad51d5ac-17bb-4240-8648-c483b224b2aa",
+            "users": [
+                {
+                    "user_id": "5d081df871deea0dd14ce63a",
+                    "user_name": "Adam",
+                    "role": "admin"
+                }
+            ],
+            "user_id": "5d081df871deea0dd14ce63a",
+            "entity_id": "53142b41-0963-4463-b793-68796f5bc130",
+            "version": "15a26957-a158-466c-9b6b-f1b8ff63da83",
+            "changed_on": "2019-06-20T02:55:29Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. Missing required key-val pair {KEY}"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. Unknown Main Contact"
+        }
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
++ Response 409 (application/json)
+
+        {
+            "error": "The request could not be completed due to a conflict with the current state of the resource"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
++ Response 415 (application/json)
+
+        {
+            "error": "Unsupported media type. Error with logo PNG. Unable to decode base64-PNG"
+        }
+
+## Suppliers - Manage users under supplier [/suppliers/users]
+
+### Get all users [GET]
+
+Get all users associated with a supplier
+
++ Request
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 53142b41-0963-4463-b793-68796f5bc130
+
++ Response 200 (application/json)
+
+        [
+            {
+                "email": "szi63337@bcaoo.com",
+                "name": "John",
+                "role": "admin",
+                "user_id": "5d26d828fe86a90c7c8c0a64"
+            },
+            {
+                "email": "glw75630@bcaoo.com",
+                "name": "Jim",
+                "role": "admin",
+                "user_id": "5d45eb167d59560e83000b6c"
+            }
+        ]
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. Admins only"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "error": "Supplier not found"
+        }
+
+### Add or Update User [POST]
+
+Adds or Updates a new or existing user to a supplier.
+Please note: The `user_id` returned is the user_id of the user added to the supplier.
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 53142b41-0963-4463-b793-68796f5bc130
+
+    + Body
+
+            {
+                "email": "szi63337@bcaoo.com",
+                "name": "John Smith",
+                "role": "user"
+            }
+
++ Response 200 (application/json)
+
+        {
+            "name": "John Smith",
+            "role": "user",
+            "user_id": "5d081df871deea0dd14ce63a"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. Admins only"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+## Suppliers - Remove user [/suppliers/users/{user_id}]
+
+### Remove User [DELETE]
+
+Deletes a user from a supplier by their user_id. The current user should be an admin for the supplier to successfully carry out this delete.
+
++ Parameters
+    + `user_id` (string) - `5d081df871deea0dd14ce63a` user_id of the user in the supplier's list of users
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 5c516c03-2bb8-434b-9041-171eda2c5196
+
++ Response 204
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. Admins only"
+        }
+
+## Suppliers - supplier by id [/suppliers/{entity_id}]
+
+### Get [GET]
+
+Gets a supplier by its id
+
++ Parameters
+    + `entity_id` (string) - `5c516c03-2bb8-434b-9041-171eda2c5196` entity id of the supplier
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 5c516c03-2bb8-434b-9041-171eda2c5196
+
++ Response 200 (application/json)
+
+        {
+            "website": "www.spirits.com",
+            "zip": "600001",
+            "name": "United Spirits",
+            "state": "karnataka",
+            "city": "banglore",
+            "main_contact_id": "ad51d5ac-17bb-4240-8648-c483b224b2aa",
+            "user_id": "5d081df871deea0dd14ce63a",
+            "street1": "MG Road",
+            "street2": "india",
+            "users": [],
+            "phone": "1234567890",
+            "entity_id": "5c516c03-2bb8-434b-9041-171eda2c5196",
+            "version": "5c460f80-bc34-4931-9378-668e78757a22",
+            "changed_on": "2019-06-20T03:04:06Z"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+### Delete [DELETE]
+
+Deletes a supplier by its id
+
++ Parameters
+    + `entity_id` (string) - `5c516c03-2bb8-434b-9041-171eda2c5196` entity id of the supplier
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 5c516c03-2bb8-434b-9041-171eda2c5196
+
++ Response 204
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
++ Response 403 (application/json)
+
+        {
+            "error": "Forbidden. supplier_id is not associated with the user"
+        }
+
+## Supplier-Distributors [/supplier-distributors]
+
+This resource contains supplier-distributors resource
+
+### Get all [GET]
+
+Get all distributors
+
++ Request
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
++ Response 200 (application/json)
+
+            [
+                {
+                    "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+                    "name": "distributor name",
+                    "user_id": "5d26bc028fc6c70caaa8fa7d",
+                    "entity_id": "9b19b67d-6270-4d41-8c51-f9e2e001f010",
+                    "version": "68bd0c2e-363c-49d2-b970-12d16b6c5bed",
+                    "changed_on": "2019-07-27T14:22:01Z"
+                }
+            ]
+
+### Add [POST]
+
+Adds a supplier-distributor
+
++ Request (application/json)
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: b9d6efbb-ee01-40d6-9735-a2e473d32628
+
+    + Body
+
+            {
+                "name": "distributor name"
+            }
+
++ Response 200 (application/json)
+
+        {
+            "name": "distributor name",
+            "access_code": "access-disabled",
+            "supplier_id": "b9d6efbb-ee01-40d6-9735-a2e473d32628",
+            "allow_ordering": false,
+            "user_id": "5e139449e5674e0ea2448f88",
+            "entity_id": "d24f3d85-d604-4ef4-adcf-75e81dc937f8",
+            "version": "05d9b612-04b0-48c4-a2ab-cf3d7a470164",
+            "changed_on": "2020-01-09T11:41:34Z"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. Missing required key-val pair {KEY}"
+        }
+
+
+### Update [PUT]
+
+Update an existing supplier-distributor record. Please note,to enable `allow_ordering`, we need
+to pass a field `allow_order_updated` and set it to `true`. This autogenerates the `access_code` field
+and also sets `allow_ordering` field to `true`.
+
+The ideal way to update is to GET a supplier-distributor record, modify the key-value pairs in that JSON data and
+pass it as body in a request to this endpoint
+
++ Request (application/json)
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: b9d6efbb-ee01-40d6-9735-a2e473d32628
+
+    + Body
+
+            {
+                "name": "changed distributor name",
+                "access_code": "access-disabled",
+                "supplier_id": "b9d6efbb-ee01-40d6-9735-a2e473d32628",
+                "allow_ordering": false,
+                "user_id": "5e139449e5674e0ea2448f88",
+                "entity_id": "d24f3d85-d604-4ef4-adcf-75e81dc937f8",
+                "version": "05d9b612-04b0-48c4-a2ab-cf3d7a470164",
+                "changed_on": "2020-01-09T11:41:34Z",
+                "allow_order_updated": true
+            }
++ Response 200 (application/json)
+
+        {
+            "name": "changed distributor name",
+            "access_code": "ECBWGW6RXY",
+            "supplier_id": "b9d6efbb-ee01-40d6-9735-a2e473d32628",
+            "allow_ordering": true,
+            "user_id": "5e139449e5674e0ea2448f88",
+            "entity_id": "d24f3d85-d604-4ef4-adcf-75e81dc937f8",
+            "version": "3428134f-c603-4e43-bb10-f650aef24717",
+            "changed_on": "2020-01-09T16:10:43Z",
+            "allow_order_updated": true
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. The request was malformed"
+        }
+
++ Response 400 (application/json)
+
+        {
+            "error": "Bad request. Missing required key-val pair {KEY}"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "error": "{RESOURCE} Resource not found"
+        }
+
+## Supplier-Distributors - item by id [/supplier-distributors/{entity_id}]
+
+### Get [GET]
+
+Gets a supplier-distributor record by its id
+
++ Parameters
+    + `entity_id` (string) - `9b19b67d-6270-4d41-8c51-f9e2e001f010` entity id of the distributor
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
++ Response 200 (application/json)
+
+        {
+            "supplier_id": "2f15bd37-fb8f-457c-9296-bfac03e36745",
+            "name": "changed distributor name",
+            "user_id": "5d26bc028fc6c70caaa8fa7d",
+            "entity_id": "9b19b67d-6270-4d41-8c51-f9e2e001f010",
+            "version": "5566f399-b8ee-4926-87ae-ce50391e63f8",
+            "changed_on": "2019-07-27T14:22:01Z"
+        }
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
+### Delete [DELETE]
+
+Deletes a supplier-distributor record by its id
+
++ Parameters
+    + `entity_id` (string) - `9b19b67d-6270-4d41-8c51-f9e2e001f010` entity id of the distributor
+
++ Request
+
+    + Headers
+
+            Authorization: Bearer ABCDEF
+            x-supplier-id: 2f15bd37-fb8f-457c-9296-bfac03e36745
+
++ Response 204
+
++ Response 404 (application/json)
+
+        {
+            "error": "Resource not found"
+        }
+
