@@ -1,0 +1,165 @@
+service: BREWOPTIX-INVENTORY-API
+
+provider:
+  name: aws
+  runtime: python3.6
+  stage: ${opt:stage, 'dev'}
+  region: ${self:custom.region}
+  environment: ${self:custom.environment}
+  iamRoleStatements:
+    - ${self:custom.iamRoleStatements}
+    - ${self:provider.secretsManagerRoleStatements}
+    - ${self:provider.RDSDataServiceAccessRoleStatements}
+  apiGateway:
+    restApiId:
+      'Fn::ImportValue': BrewOptix-${self:provider.stage}-ApiGateway-restApiId
+    restApiRootResourceId:
+      'Fn::ImportValue': BrewOptix-${self:provider.stage}-ApiGateway-rootResourceId
+  secretsManagerRoleStatements:
+    Effect: Allow
+    Action:
+      - secretsmanager:GetSecretValue
+      - secretsmanager:PutResourcePolicy
+      - secretsmanager:PutSecretValue
+      - secretsmanager:DeleteSecret
+      - secretsmanager:DescribeSecret
+      - secretsmanager:TagResource
+    Resource:
+      - ${self:custom.environment.AURORA_DB_SECRET_ARN}
+  RDSDataServiceAccessRoleStatements:
+    Effect: Allow
+    Action:
+      - secretsmanager:CreateSecret
+      - secretsmanager:ListSecrets
+      - secretsmanager:GetRandomPassword
+      - tag:GetResources
+      - rds-data:BatchExecuteStatement
+      - rds-data:BeginTransaction
+      - rds-data:CommitTransaction
+      - rds-data:ExecuteStatement
+      - rds-data:RollbackTransaction
+    Resource:
+      - "*"
+
+custom: ${file(../config.yaml)}
+
+# It is not possible to reference files on directory levels above serverless.yml directly when working in AWS Lambda
+# So, we either have to install these additional files as pip packages or `include` them to the package explicitly
+# Included python files would be available parallel to serverless.yml and needs to be imported in this structure
+# For example:
+# fdc_data_dynamodb is present two levels above this serverless.yml, but in common.py it can be imported from cur dir.
+package:
+  include:
+    - ../api_utils.py
+    - ../api_constants.py
+    - ../common.py
+    - ../../log_config.py
+    - ../../logging_api.py
+    - ../auth.py
+    - ../../data_common/*
+    - ../../data_dynamodb/*
+    - ../../data_dynamodb/repository/*
+
+functions:
+  get_inventory_products_by_date_range:
+    handler: handler.get_inventory_products_by_date_range
+    name: ${self:provider.stage}-${self:service}-get-inventory-by-date-range
+    description: get inventory products by date range
+    timeout: 20
+    events:
+      - http:
+          path: inventory/{start_date}/{end_date}
+          method: get
+          cors: ${self:custom.corsStatements}
+          response:
+            headers:
+              Content-Type: "'application/json'"
+            template: $input.path('$.body')
+          integration: lambda
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+          request:
+            parameters:
+              paths:
+                start_date: true
+                end_date: true
+      - http:
+          path: inventory/{start_date}
+          method: get
+          cors: ${self:custom.corsStatements}
+          response:
+            headers:
+              Content-Type: "'application/json'"
+            template: $input.path('$.body')
+          integration: lambda
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+          request:
+            parameters:
+              paths:
+                start_date: true
+
+  get_details_by_date_range:
+    handler: handler.get_details_by_date_range
+    name: ${self:provider.stage}-${self:service}-get-details-by-date-range
+    description: get details date range
+    timeout: 20
+    events:
+      - http:
+          path: inventory/details/{start_date}/{end_date}
+          method: get
+          cors: ${self:custom.corsStatements}
+          response:
+            headers:
+              Content-Type: "'application/json'"
+            template: $input.path('$.body')
+          integration: lambda
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+          request:
+            parameters:
+              paths:
+                start_date: true
+                end_date: true
+      - http:
+          path: inventory/details/{start_date}
+          method: get
+          cors: ${self:custom.corsStatements}
+          response:
+            headers:
+              Content-Type: "'application/json'"
+            template: $input.path('$.body')
+          integration: lambda
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+          request:
+            parameters:
+              paths:
+                start_date: true
+
+  get_csv_file:
+    handler: handler.get_inventory_csv
+    name: ${self:provider.stage}-${self:service}-get-inventory-csv
+    description: Get a CSV file from the provided data
+    timeout: 20
+    events:
+      - http:
+          path: inventory/csv
+          method: post
+          cors: ${self:custom.corsStatements}
+          integration: lambda
+          response:
+            headers:
+              Content-Type: "'application/csv'"
+            template: $input.path('$.body')
+          authorizer:
+            type: CUSTOM
+            authorizerId: ${cf:BREWOPTIX-AUTH-${self:provider.stage}.apiGatewayAuthorizer}
+
+plugins:
+  - serverless-python-requirements
+  - serverless-prune-plugin
