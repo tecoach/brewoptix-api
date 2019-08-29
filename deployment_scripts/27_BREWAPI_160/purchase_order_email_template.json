@@ -1,0 +1,8 @@
+{
+  "Template": {
+    "TemplateName": "purchase_order_email_template",
+    "SubjectPart": "Purchase Order Notification",
+    "HtmlPart": "<style>table{border-collapse: collapse;}table, th, td{border: 1px solid black; text-align: center;}</style><body> <h1>Purchase Order</h1> <table width='100%' style='border: 1px solid black;'> <thead> <tr> <th >Distributor</th> <th>Order Date</th> <th>Pack Date</th> <th>Ship Date</th> <th>Order Number</th> <th>PO Number</th> </tr></thead> <tbody> <tr> <td>{{distributor_name}}</td><td>{{order_date}}</td><td>{{pack_date}}</td><td>{{ship_date}}</td><td>{{order_number}}</td><td>{{po_number}}</td></tr><tr><td colspan='6'>{{order_details}}<td></tr></tbody> </table></body>",
+    "TextPart": ""
+  }
+}
