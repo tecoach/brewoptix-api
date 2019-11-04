@@ -1,0 +1,116 @@
+service: BREWOPTIX-AUTH
+
+provider:
+  name: aws
+  runtime: python3.6
+  stage: ${opt:stage, 'dev'}
+  region: ${file(../config.${self:provider.stage}.json):REGION}
+  environment:
+    AUTH0_CLIENT_ID: ${file(../config.${self:provider.stage}.json):AUTH0_CLIENT_ID}
+    AUTH0_CLIENT_PUBLIC_KEY: ${file(../public_key)}
+    AUTHORIZER_ARN: arn:aws:lambda:${self:provider.region}:#{AWS::AccountId}:function:${self:provider.stage}-BREWOPTIX-AUTH-auth
+  apiGateway:
+    restApiId:
+      Ref: BrewOptixWebapiApiGateway
+    restApiResources:
+      Fn::GetAtt:
+        - BrewOptixWebapiApiGateway
+        - RootResourceId
+
+custom:
+  region: ${file(../config.${self:provider.stage}.json):REGION}
+  pythonRequirements:
+    dockerizePip: true
+    fileName: ../requirements.txt
+    slim: true
+  prune:
+    automatic: true
+    number: 3
+
+functions:
+  auth:
+    handler: auth.auth
+    name: ${self:provider.stage}-${self:service}-auth
+    cors: true
+
+package:
+  exclude:
+    - ./**
+  include:
+    - auth.py
+    - config.yaml
+    - package.json
+
+resources:
+  Resources:
+    BrewOptixWebapiApiGateway:
+      Type: AWS::ApiGateway::RestApi
+      Properties:
+        Name: BREWOPTIX-API-GATEWAY-${self:provider.stage}
+
+    ApiGatewayAuthorizer:
+      Type: AWS::ApiGateway::Authorizer
+      Properties:
+        AuthorizerResultTtlInSeconds: 300
+        IdentitySource: method.request.header.Authorization
+        Name: BrewOptixAuthorizer
+        RestApiId:
+          Ref: BrewOptixWebapiApiGateway
+        Type: TOKEN
+        IdentityValidationExpression: '^Bearer [-0-9a-zA-z\.]*$'
+        AuthorizerUri: arn:aws:apigateway:${self:provider.region}:lambda:path/2015-03-31/functions/${self:provider.environment.AUTHORIZER_ARN}/invocations
+        AuthorizerCredentials:
+          Fn::GetAtt:
+            - ApiGatewayAuthorizerRole
+            - Arn
+
+    ApiGatewayAuthorizerRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: 'Allow'
+              Principal:
+                Service:
+                  - 'apigateway.amazonaws.com'
+              Action:
+                - sts:AssumeRole
+        Policies:
+          - PolicyName: 'InvokeAuthorizerFunction-${self:provider.stage}'
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: 'Allow'
+                  Action:
+                    - lambda:InvokeAsync
+                    - lambda:InvokeFunction
+                  Resource: ${self:provider.environment.AUTHORIZER_ARN}
+
+  # Api Gateway resources to make the API Base URL unchanging
+  Outputs:
+    apiGatewayRestApiId:
+      Value:
+        Ref: BrewOptixWebapiApiGateway
+      Export:
+        Name: BrewOptix-${self:provider.stage}-ApiGateway-restApiId
+
+    apiGatewayRestApiRootResourceId:
+      Value:
+          Fn::GetAtt:
+          - BrewOptixWebapiApiGateway
+          - RootResourceId
+      Export:
+        Name: BrewOptix-${self:provider.stage}-ApiGateway-rootResourceId
+
+    apiGatewayAuthorizer:
+      Value:
+        Ref: ApiGatewayAuthorizer
+      Export:
+        Name: BrewOptix-${self:provider.stage}-ApiGateway-Authorizer
+
+
+plugins:
+  - serverless-python-requirements
+  - serverless-pseudo-parameters
+  - serverless-prune-plugin
