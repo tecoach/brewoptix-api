@@ -1,0 +1,75 @@
+service: BREWOPTIX-Q-ADJUSTMENTS
+
+provider:
+  name: aws
+  runtime: python3.6
+  stage: ${opt:stage, 'dev'}
+  region: ${self:custom.region}
+  environment: ${self:custom.environment}
+  iamRoleStatements:
+    - ${self:custom.iamRoleStatements}
+    - ${self:provider.sqsRoleStatements}
+    - ${self:provider.secretsManagerRoleStatements}
+    - ${self:provider.RDSDataServiceAccessRoleStatements}
+  sqsRoleStatements:
+    Effect: Allow
+    Action:
+      - sqs:SendMessage
+      - sqs:GetQueueUrl
+      - sqs:ListQueues
+    Resource:
+      - arn:aws:sqs:#{AWS::Region}:#{AWS::AccountId}:${self:provider.stage}-adjustments
+      - arn:aws:sqs:#{AWS::Region}:#{AWS::AccountId}:${self:provider.stage}-projections
+  secretsManagerRoleStatements:
+    Effect: Allow
+    Action:
+      - secretsmanager:GetSecretValue
+      - secretsmanager:PutResourcePolicy
+      - secretsmanager:PutSecretValue
+      - secretsmanager:DeleteSecret
+      - secretsmanager:DescribeSecret
+      - secretsmanager:TagResource
+    Resource:
+      - ${self:custom.environment.AURORA_DB_SECRET_ARN}
+  RDSDataServiceAccessRoleStatements:
+    Effect: Allow
+    Action:
+      - secretsmanager:CreateSecret
+      - secretsmanager:ListSecrets
+      - secretsmanager:GetRandomPassword
+      - tag:GetResources
+      - rds-data:BatchExecuteStatement
+      - rds-data:BeginTransaction
+      - rds-data:CommitTransaction
+      - rds-data:ExecuteStatement
+      - rds-data:RollbackTransaction
+    Resource:
+      - "*"
+
+custom: ${file(../config.yaml)}
+
+package:
+  include:
+    - ../api_utils.py
+    - ../api_constants.py
+    - ../common.py
+    - ../../log_config.py
+    - ../../logging_api.py
+    - ../auth.py
+    - ../../data_common/*
+    - ../../data_dynamodb/*
+    - ../../data_dynamodb/repository/*
+
+functions:
+  # SQS handler
+  process_adjustments_queue:
+    handler: handler.process_adjustments_queue
+    name: ${self:provider.stage}-${self:service}-process-adjustments-queue
+    description: Process adjustments queue
+    timeout: 120
+    events:
+      - sqs: arn:aws:sqs:#{AWS::Region}:#{AWS::AccountId}:${self:provider.stage}-adjustments
+
+plugins:
+  - serverless-python-requirements
+  - serverless-pseudo-parameters
